@@ -689,39 +689,48 @@ export default function PuntoDeVentaView() {
                       printWindow2.print();
                       printWindow2.close();
                     }
-                    try {
-                      const subTotal = seleccionados.reduce((sum, p) => sum + p.precio * p.cantidad, 0);
-                      const isv15 = seleccionados
-                        .filter(p => p.tipo === 'comida')
-                        .reduce((sum, p) => sum + (p.precio * p.cantidad * 0.15), 0);
-                      const isv18 = seleccionados
-                        .filter(p => p.tipo === 'bebida')
-                        .reduce((sum, p) => sum + (p.precio * p.cantidad * 0.18), 0);
-                      if (facturaActual === 'Límite alcanzado') {
-                        alert('¡Se ha alcanzado el límite de facturas para este cajero!');
-                        return;
+                      try {
+                        // Cálculo correcto de sub_total, isv_15, isv_18 y total
+                        const subTotal = seleccionados.reduce((sum, p) => {
+                          if (p.tipo === 'comida') {
+                            return sum + ((p.precio / 1.15) * p.cantidad);
+                          } else if (p.tipo === 'bebida') {
+                            return sum + ((p.precio / 1.18) * p.cantidad);
+                          } else {
+                            return sum + (p.precio * p.cantidad);
+                          }
+                        }, 0);
+                        const isv15 = seleccionados
+                          .filter(p => p.tipo === 'comida')
+                          .reduce((sum, p) => sum + ((p.precio - (p.precio / 1.15)) * p.cantidad), 0);
+                        const isv18 = seleccionados
+                          .filter(p => p.tipo === 'bebida')
+                          .reduce((sum, p) => sum + ((p.precio - (p.precio / 1.18)) * p.cantidad), 0);
+                        if (facturaActual === 'Límite alcanzado') {
+                          alert('¡Se ha alcanzado el límite de facturas para este cajero!');
+                          return;
+                        }
+                        const factura = facturaActual;
+                        const venta = {
+                          fecha_hora: new Date().toISOString(),
+                          cajero: usuarioActual?.nombre || '',
+                          caja: caiInfo?.caja_asignada || '',
+                          cai: caiInfo && caiInfo.cai ? caiInfo.cai : '',
+                          factura,
+                          cliente: nombreCliente,
+                          productos: JSON.stringify(seleccionados.map(p => ({ id: p.id, nombre: p.nombre, precio: p.precio, cantidad: p.cantidad, tipo: p.tipo }))),
+                          sub_total: subTotal.toFixed(2),
+                          isv_15: isv15.toFixed(2),
+                          isv_18: isv18.toFixed(2),
+                          total: seleccionados.reduce((sum, p) => sum + p.precio * p.cantidad, 0).toFixed(2),
+                        };
+                        await supabase.from('facturas').insert([venta]);
+                        if (facturaActual !== 'Límite alcanzado') {
+                          setFacturaActual((parseInt(facturaActual) + 1).toString());
+                        }
+                      } catch (err) {
+                        console.error('Error al guardar la venta:', err);
                       }
-                      const factura = facturaActual;
-                      const venta = {
-                        fecha_hora: new Date().toISOString(),
-                        cajero: usuarioActual?.nombre || '',
-                        caja: caiInfo?.caja_asignada || '',
-                        cai: caiInfo?.cai || '',
-                        factura,
-                        cliente: nombreCliente,
-                        productos: JSON.stringify(seleccionados.map(p => ({ id: p.id, nombre: p.nombre, precio: p.precio, cantidad: p.cantidad, tipo: p.tipo }))),
-                        sub_total: subTotal,
-                        isv_15: isv15,
-                        isv_18: isv18,
-                        total: subTotal + isv15 + isv18,
-                      };
-                      await supabase.from('facturas').insert([venta]);
-                      if (facturaActual !== 'Límite alcanzado') {
-                        setFacturaActual((parseInt(facturaActual) + 1).toString());
-                      }
-                    } catch (err) {
-                      console.error('Error al guardar la venta:', err);
-                    }
                     limpiarSeleccion();
                     setNombreCliente('');
                   }, 300);
