@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import PagoModal from './PagoModal';
 import { createClient } from '@supabase/supabase-js';
 
 interface Producto {
@@ -35,21 +36,13 @@ const usuarioActual = (() => {
 
 export default function PuntoDeVentaView() {
   const [facturaActual, setFacturaActual] = useState<string>('');
+  const [showPagoModal, setShowPagoModal] = useState(false);
   const [showClienteModal, setShowClienteModal] = useState(false);
   const [showFacturaModal, setShowFacturaModal] = useState(false);
   const [nombreCliente, setNombreCliente] = useState('');
   const [caiInfo, setCaiInfo] = useState<{ caja_asignada: string; nombre_cajero: string; cai: string } | null>(null);
   const [online, setOnline] = useState(navigator.onLine);
 
-  useEffect(() => {
-    const updateOnline = () => setOnline(navigator.onLine);
-    window.addEventListener('online', updateOnline);
-    window.addEventListener('offline', updateOnline);
-    return () => {
-      window.removeEventListener('online', updateOnline);
-      window.removeEventListener('offline', updateOnline);
-    };
-  }, []);
   const [productos, setProductos] = useState<Producto[]>([]);
   const [seleccionados, setSeleccionados] = useState<Seleccion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,6 +96,8 @@ export default function PuntoDeVentaView() {
     }
     fetchCaiYFactura();
   }, []);
+
+  // Los modales se deben renderizar dentro del return principal
 
   // Fetch products from Supabase
   useEffect(() => {
@@ -218,6 +213,54 @@ export default function PuntoDeVentaView() {
         <button
           onClick={() => {
             localStorage.removeItem('usuario');
+              {/* Modal para requerir factura */}
+              {showFacturaModal && (
+                <div style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  width: '100vw',
+                  height: '100vh',
+                  background: 'rgba(0,0,0,0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 9999,
+                }}>
+                  <div style={{
+                    background: '#fff',
+                    borderRadius: 16,
+                    boxShadow: '0 8px 32px rgba(25, 118, 210, 0.18)',
+                    padding: 32,
+                    minWidth: 350,
+                    maxWidth: 420,
+                    width: '100%',
+                    position: 'relative',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 18,
+                  }}>
+                    <h3 style={{ color: '#1976d2', marginBottom: 12 }}>¿Requiere factura?</h3>
+                    <div style={{ display: 'flex', gap: 32, justifyContent: 'center' }}>
+                      <button
+                        onClick={async () => {
+                          setShowFacturaModal(false);
+                          setShowPagoModal(true);
+                        }}
+                        style={{ background: '#388e3c', color: '#fff', borderRadius: 8, border: 'none', padding: '10px 32px', fontWeight: 600, fontSize: 16 }}
+                      >Sí</button>
+                      <button
+                        onClick={async () => {
+                          setShowFacturaModal(false);
+                          setShowPagoModal(true);
+                        }}
+                        style={{ background: '#1976d2', color: '#fff', borderRadius: 8, border: 'none', padding: '10px 32px', fontWeight: 600, fontSize: 16 }}
+                      >No</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
             window.location.href = '/login';
           }}
           style={{
@@ -233,6 +276,19 @@ export default function PuntoDeVentaView() {
           }}
         >Cerrar sesión</button>
       </div>
+
+      {/* Modal de pago (fuera del bloque del botón) */}
+      <PagoModal
+        isOpen={showPagoModal}
+        onClose={() => {
+          setShowPagoModal(false);
+        }}
+        factura={facturaActual}
+        onPagoConfirmado={() => {
+          setShowPagoModal(false);
+          setShowClienteModal(true);
+        }}
+      />
       <h1 style={{
         color: '#1976d2',
         marginBottom: 24,
@@ -489,7 +545,7 @@ export default function PuntoDeVentaView() {
                 opacity: seleccionados.length === 0 ? 0.5 : 1,
               }}
               disabled={seleccionados.length === 0}
-              onClick={() => setShowClienteModal(true)}
+              onClick={() => setShowPagoModal(true)}
             >
               Confirmar Pedido
             </button>
