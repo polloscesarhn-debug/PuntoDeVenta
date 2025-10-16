@@ -119,8 +119,8 @@ function App() {
   }
 
   if (showLanding) {
-    return <Landing onFinish={handleLandingFinish} user={user} />;
-  }
+      return <Landing onFinish={handleLandingFinish} />;
+    }
 
   if (view === "resultadosCaja") {
     return (
