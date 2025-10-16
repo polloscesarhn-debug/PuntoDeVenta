@@ -532,72 +532,176 @@ export default function InventarioView({ onBack }: InventarioViewProps) {
         {/* Error */}
         {error && <div className="error">⚠️ {error}</div>}
 
-        {/* Tabla */}
+        {/* Tablas separadas */}
         {loading ? (
           <div className="loading">⏳ Cargando inventario...</div>
         ) : (
-          <div className="table-container">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Código</th>
-                  <th>Nombre</th>
-                  <th>Imagen</th>
-                  <th>Precio</th>
-                  <th>Tipo</th>
-                  <th>Impuesto</th>
-                  <th>Subtotal</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {productos.map((p) => (
-                  <tr key={p.id}>
-                    <td>
-                      <strong>{p.codigo}</strong>
-                    </td>
-                    <td>{p.nombre}</td>
-                    <td>
-                      {p.imagen ? (
-                        <img
-                          src={p.imagen}
-                          alt={p.nombre}
-                          className="product-image"
-                        />
-                      ) : (
-                        <span style={{ color: "#666" }}>Sin imagen</span>
-                      )}
-                    </td>
-                    <td style={{ color: "#4caf50" }}>
-                      L {p.precio.toFixed(2)}
-                    </td>
-                    <td
-                      style={{
-                        color: p.tipo === "comida" ? "#2e7d32" : "#f57c00",
-                      }}
-                    >
-                      {p.tipo}
-                    </td>
-                    <td>{p.tipo_impuesto === "venta" ? "15%" : "18%"}</td>
-                    <td>L {p.sub_total.toFixed(2)}</td>
-                    <td>
-                      <button
-                        className="btn-table btn-edit"
-                        onClick={() => handleEdit(p)}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        className="btn-table btn-delete"
-                        onClick={() => handleDelete(p.id!)}
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div
+            style={{
+              display: "flex",
+              gap: "2rem",
+              width: "100vw",
+              minHeight: "60vh",
+              justifyContent: "center",
+              alignItems: "flex-start",
+              maxWidth: "1400px",
+              margin: "0 auto",
+            }}
+          >
+            <div
+              style={{
+                flex: 1,
+                minWidth: "0",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <h2
+                style={{
+                  color: "#fff",
+                  marginBottom: "1rem",
+                  marginTop: "2rem",
+                  textAlign: "center",
+                }}
+              >
+                🍽️ Comidas
+              </h2>
+              <div className="table-container">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Código</th>
+                      <th>Nombre</th>
+                      <th>Imagen</th>
+                      <th>Precio</th>
+                      <th>Impuesto</th>
+                      <th>Subtotal</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {productos
+                      .filter((p) => p.tipo === "comida")
+                      .map((p) => (
+                        <tr key={p.id}>
+                          <td>
+                            <strong>{p.codigo}</strong>
+                          </td>
+                          <td>{p.nombre}</td>
+                          <td>
+                            {p.imagen ? (
+                              <img
+                                src={p.imagen}
+                                alt={p.nombre}
+                                className="product-image"
+                              />
+                            ) : (
+                              <span style={{ color: "#666" }}>Sin imagen</span>
+                            )}
+                          </td>
+                          <td style={{ color: "#4caf50" }}>
+                            L {p.precio.toFixed(2)}
+                          </td>
+                          <td>{p.tipo_impuesto === "venta" ? "15%" : "18%"}</td>
+                          <td>L {p.sub_total.toFixed(2)}</td>
+                          <td>
+                            <button
+                              className="btn-table btn-edit"
+                              onClick={() => handleEdit(p)}
+                            >
+                              Editar
+                            </button>
+                            <button
+                              className="btn-table btn-delete"
+                              onClick={() => handleDelete(p.id!)}
+                            >
+                              Eliminar
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div
+              style={{
+                flex: 1,
+                minWidth: "0",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <h2
+                style={{
+                  color: "#fff",
+                  marginBottom: "1rem",
+                  marginTop: "2rem",
+                  textAlign: "center",
+                }}
+              >
+                🥤 Bebidas
+              </h2>
+              <div className="table-container">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Código</th>
+                      <th>Nombre</th>
+                      <th>Imagen</th>
+                      <th>Precio</th>
+                      <th>Impuesto</th>
+                      <th>Subtotal</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {productos
+                      .filter((p) => p.tipo === "bebida")
+                      .map((p) => (
+                        <tr key={p.id}>
+                          <td>
+                            <strong>{p.codigo}</strong>
+                          </td>
+                          <td>{p.nombre}</td>
+                          <td>
+                            {p.imagen ? (
+                              <img
+                                src={p.imagen}
+                                alt={p.nombre}
+                                className="product-image"
+                              />
+                            ) : (
+                              <span style={{ color: "#666" }}>Sin imagen</span>
+                            )}
+                          </td>
+                          <td style={{ color: "#4caf50" }}>
+                            L {p.precio.toFixed(2)}
+                          </td>
+                          <td>{p.tipo_impuesto === "venta" ? "15%" : "18%"}</td>
+                          <td>L {p.sub_total.toFixed(2)}</td>
+                          <td>
+                            <button
+                              className="btn-table btn-edit"
+                              onClick={() => handleEdit(p)}
+                            >
+                              Editar
+                            </button>
+                            <button
+                              className="btn-table btn-delete"
+                              onClick={() => handleDelete(p.id!)}
+                            >
+                              Eliminar
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         )}
 

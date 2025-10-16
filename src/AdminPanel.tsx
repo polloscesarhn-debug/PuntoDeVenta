@@ -44,7 +44,7 @@ const cards: {
     subtitle: "Documentos fiscales",
   },
   {
-    label: "Reportes Financieros",
+    label: "Reporte de Ventas",
     icon: "📊",
     view: "resultados",
     color: "#c62828",
@@ -71,21 +71,25 @@ interface AdminPanelProps {
   user: any;
 }
 
-const AdminPanel: FC<AdminPanelProps> = ({ onSelect, user }) => (
-  <div
-    className="admin-panel-enterprise"
-    style={{
-      width: "100vw",
-      height: "100vh",
-      minHeight: "100vh",
-      minWidth: "100vw",
-      margin: 0,
-      padding: 0,
-      boxSizing: "border-box",
-      overflow: "auto",
-    }}
-  >
-    <style>{`
+import { useState } from "react";
+
+const AdminPanel: FC<AdminPanelProps> = ({ onSelect, user }) => {
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  return (
+    <div
+      className="admin-panel-enterprise"
+      style={{
+        width: "100vw",
+        height: "100vh",
+        minHeight: "100vh",
+        minWidth: "100vw",
+        margin: 0,
+        padding: 0,
+        boxSizing: "border-box",
+        overflow: "auto",
+      }}
+    >
+      <style>{`
       body, #root {
         width: 100vw !important;
         height: 100vh !important;
@@ -161,10 +165,15 @@ const AdminPanel: FC<AdminPanelProps> = ({ onSelect, user }) => (
       }
       
       .user-info {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.04);
+  border-radius: 12px;
+  padding: 1.2rem 1.5rem 1.5rem 1.5rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
       }
       
       .user-avatar {
@@ -333,87 +342,209 @@ const AdminPanel: FC<AdminPanelProps> = ({ onSelect, user }) => (
       }
     `}</style>
 
-    <header className="header">
-      <div className="header-content">
-        <div className="logo">
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
-            <img
-              src="https://i.imgur.com/4M9UCRM.jpeg"
-              alt="Logo"
+      <header className="header">
+        <div className="header-content">
+          <div className="logo">
+            <div
               style={{
-                width: 418,
-                height: 158,
-                borderRadius: 12,
-                objectFit: "cover",
-              }}
-            />
-            <span
-              style={{
-                display: "block",
-                textAlign: "center",
-                fontWeight: 800,
-                fontSize: "1.7rem",
-                color: "#fff",
-                marginTop: "0.5rem",
-                letterSpacing: "2px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
               }}
             >
-              pollos cesar
-            </span>
-          </div>
-        </div>
-        <div className="user-info">
-          <div className="user-avatar">
-            {user.nombre?.charAt(0).toUpperCase()}
-          </div>
-          <div className="user-details">
-            <h1>{user.nombre}</h1>
-            <p className="user-role">Administrador</p>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <main className="main-content">
-      <div className="welcome-section">
-        <h1 className="welcome-title">Panel de Control</h1>
-       
-      </div>
-
-      <div className="cards-grid">
-        {cards.map((card) => (
-          <div
-            key={card.view}
-            className="card"
-            onClick={() => onSelect(card.view)}
-            style={{ "--card-color": card.color } as React.CSSProperties}
-          >
-            <div className="card-header">
-              <div
-                className="card-icon"
-                style={{ "--card-color": card.color } as React.CSSProperties}
+              <img
+                src="https://i.imgur.com/4M9UCRM.jpeg"
+                alt="Logo"
+                style={{
+                  width: 418,
+                  height: 158,
+                  borderRadius: 12,
+                  objectFit: "cover",
+                }}
+              />
+              <span
+                style={{
+                  display: "block",
+                  textAlign: "center",
+                  fontWeight: 800,
+                  fontSize: "1.7rem",
+                  color: "#fff",
+                  marginTop: "0.5rem",
+                  letterSpacing: "2px",
+                }}
               >
-                {card.icon}
-              </div>
-              <div className="card-content">
-                <h3>{card.label}</h3>
-                <p className="card-subtitle">{card.subtitle}</p>
-              </div>
-            </div>
-            <div className="card-footer">
-              <span className="card-arrow">→</span>
+                pollos cesar
+              </span>
             </div>
           </div>
-        ))}
-      </div>
-    </main>
-  </div>
-);
+          <div className="user-info">
+            <div className="user-avatar" style={{ marginBottom: "0.5rem" }}>
+              {user.nombre?.charAt(0).toUpperCase()}
+            </div>
+            <div className="user-details" style={{ textAlign: "center" }}>
+              <h1
+                style={{
+                  fontSize: "1.2rem",
+                  fontWeight: 700,
+                  margin: 0,
+                  color: "#fff",
+                }}
+              >
+                {user.nombre}
+              </h1>
+              <p
+                className="user-role"
+                style={{
+                  fontSize: "0.95rem",
+                  color: "#ffe066",
+                  margin: 0,
+                  fontWeight: 600,
+                }}
+              >
+                Administrador
+              </p>
+            </div>
+            <button
+              className="btn-primary"
+              style={{
+                marginTop: "1rem",
+                width: "100%",
+                fontSize: "1rem",
+                background: "linear-gradient(135deg, #c62828 0%, #ffe066 100%)",
+                color: "#1a1a2e",
+                fontWeight: 700,
+                border: "none",
+                borderRadius: "8px",
+                boxShadow: "0 2px 8px rgba(198,40,40,0.15)",
+              }}
+              onClick={() => setShowLogoutModal(true)}
+            >
+              🔒 Cerrar sesión
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="main-content">
+        <div className="welcome-section">
+          <h1 className="welcome-title">Panel de Control</h1>
+        </div>
+
+        <div className="cards-grid">
+          {cards.map((card) => (
+            <div
+              key={card.view}
+              className="card"
+              onClick={() => onSelect(card.view)}
+              style={{ "--card-color": card.color } as React.CSSProperties}
+            >
+              <div className="card-header">
+                <div
+                  className="card-icon"
+                  style={{ "--card-color": card.color } as React.CSSProperties}
+                >
+                  {card.icon}
+                </div>
+                <div className="card-content">
+                  <h3>{card.label}</h3>
+                  <p className="card-subtitle">{card.subtitle}</p>
+                </div>
+              </div>
+              <div className="card-footer">
+                <span className="card-arrow">→</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </main>
+      {/* Modal de cierre de sesión */}
+      {showLogoutModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+          }}
+        >
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "16px",
+              padding: "2rem 2.5rem",
+              minWidth: "320px",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+              textAlign: "center",
+            }}
+          >
+            <h2
+              style={{
+                color: "#c62828",
+                fontWeight: 800,
+                marginBottom: "1rem",
+              }}
+            >
+              Cerrar sesión
+            </h2>
+            <p
+              style={{
+                color: "#222",
+                fontSize: "1.1rem",
+                marginBottom: "2rem",
+              }}
+            >
+              ¿Seguro que deseas cerrar sesión?
+            </p>
+            <div
+              style={{ display: "flex", gap: "1rem", justifyContent: "center" }}
+            >
+              <button
+                style={{
+                  background:
+                    "linear-gradient(135deg, #c62828 0%, #ffe066 100%)",
+                  color: "#1a1a2e",
+                  fontWeight: 700,
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "0.7rem 1.5rem",
+                  fontSize: "1rem",
+                  cursor: "pointer",
+                  boxShadow: "0 2px 8px rgba(198,40,40,0.15)",
+                }}
+                onClick={() => {
+                  localStorage.removeItem("usuario");
+                  window.location.href = "/";
+                }}
+              >
+                Sí, cerrar sesión
+              </button>
+              <button
+                style={{
+                  background: "#eee",
+                  color: "#222",
+                  fontWeight: 600,
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "0.7rem 1.5rem",
+                  fontSize: "1rem",
+                  cursor: "pointer",
+                }}
+                onClick={() => setShowLogoutModal(false)}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default AdminPanel;

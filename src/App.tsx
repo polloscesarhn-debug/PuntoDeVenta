@@ -245,9 +245,7 @@ function App() {
 
   return (
     <div style={{ textAlign: "center", marginTop: 40 }}>
-      <h1>Bienvenido, {user.nombre}</h1>
-      <p>Código: {user.codigo}</p>
-      <button onClick={handleLogout}>Cerrar sesión</button>
+  {/* Elementos de bienvenida, código y cerrar sesión ocultos globalmente */}
     </div>
   );
 }

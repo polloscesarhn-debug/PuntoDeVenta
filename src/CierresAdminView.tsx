@@ -502,12 +502,14 @@ export default function CierresAdminView({
 
         .clave-btn {
           width: 100%;
-          background: linear-gradient(135deg, #9c27b0, #ba68c8);
-          color: #fff;
+          background: linear-gradient(135deg, #1976d2 0%, #ffe066 100%);
+          color: #1a1a2e;
           padding: 12px;
           border-radius: 8px;
           font-weight: 600;
           margin-top: 1rem;
+          box-shadow: 0 2px 8px rgba(25, 118, 210, 0.15);
+          border: 2px solid #ffe066;
         }
 
         .title {

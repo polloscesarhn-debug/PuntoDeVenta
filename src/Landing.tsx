@@ -29,7 +29,7 @@ export default function Landing({ onFinish, user }: LandingProps) {
         boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
         textAlign: 'center',
       }}>
-        <h1 style={{ color: '#1976d2' }}>¡Bienvenido, {user.nombre}!</h1>
+  {/* <h1 style={{ color: '#1976d2' }}>¡Bienvenido, {user.nombre}!</h1> */}
         <p>Accediendo al sistema...</p>
       </div>
     </div>

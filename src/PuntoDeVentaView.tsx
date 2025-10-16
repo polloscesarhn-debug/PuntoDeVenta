@@ -55,6 +55,14 @@ export default function PuntoDeVentaView({
   ) => void;
 }) {
   const [showCierre, setShowCierre] = useState(false);
+  const [theme, setTheme] = useState<"lite" | "dark">(() => {
+    try {
+      const stored = localStorage.getItem("theme");
+      return stored === "dark" ? "dark" : "lite";
+    } catch {
+      return "lite";
+    }
+  });
   const [facturaActual, setFacturaActual] = useState<string>("");
   const [showPagoModal, setShowPagoModal] = useState(false);
   const [showClienteModal, setShowClienteModal] = useState(false);
@@ -246,7 +254,11 @@ export default function PuntoDeVentaView({
         left: 0,
         width: "100vw",
         height: "100vh",
-        background: "rgba(255,255,255,0.95)",
+        background:
+          theme === "lite"
+            ? "rgba(255,255,255,0.95)"
+            : "linear-gradient(135deg, #232526 0%, #414345 100%)",
+        color: theme === "lite" ? "#222" : "#f5f5f5",
         fontFamily: "Arial, sans-serif",
         overflow: "hidden",
         display: "flex",
@@ -254,6 +266,7 @@ export default function PuntoDeVentaView({
         justifyContent: "flex-start",
         alignItems: "center",
         zIndex: 999,
+        transition: "background 0.3s, color 0.3s",
       }}
     >
       {/* Indicador de conexión */}
@@ -289,7 +302,7 @@ export default function PuntoDeVentaView({
           {online ? "Conectado" : "Sin conexión"}
         </span>
       </div>
-      {/* Botón cerrar sesión y volver si es admin */}
+      {/* Botón cerrar sesión, volver y interruptor de tema */}
       <div
         style={{
           position: "absolute",
@@ -297,9 +310,73 @@ export default function PuntoDeVentaView({
           right: 32,
           display: "flex",
           gap: 12,
+          alignItems: "center",
           zIndex: 10000,
         }}
       >
+        {/* Interruptor de tema moderno */}
+        <button
+          onClick={() => {
+            const next = theme === "lite" ? "dark" : "lite";
+            setTheme(next);
+            localStorage.setItem("theme", next);
+          }}
+          style={{
+            background: theme === "dark" ? "#222" : "#eee",
+            border: "2px solid #1976d2",
+            borderRadius: 20,
+            width: 54,
+            height: 28,
+            display: "flex",
+            alignItems: "center",
+            cursor: "pointer",
+            position: "relative",
+            transition: "background 0.3s",
+            marginRight: 8,
+          }}
+          title={theme === "lite" ? "Modo oscuro" : "Modo claro"}
+        >
+          <span
+            style={{
+              position: "absolute",
+              left: theme === "lite" ? 4 : 26,
+              top: 4,
+              width: 20,
+              height: 20,
+              borderRadius: "50%",
+              background: theme === "dark" ? "#1976d2" : "#fbc02d",
+              boxShadow: "0 2px 6px #0002",
+              transition: "left 0.3s, background 0.3s",
+              display: "block",
+            }}
+          />
+          <span
+            style={{
+              position: "absolute",
+              right: 6,
+              top: 6,
+              fontSize: 14,
+              color: theme === "dark" ? "#fff" : "#222",
+              fontWeight: 700,
+              opacity: theme === "dark" ? 1 : 0.5,
+            }}
+          >
+            🌙
+          </span>
+          <span
+            style={{
+              position: "absolute",
+              left: 6,
+              top: 6,
+              fontSize: 14,
+              color: theme === "lite" ? "#fbc02d" : "#fff",
+              fontWeight: 700,
+              opacity: theme === "lite" ? 1 : 0.5,
+            }}
+          >
+            ☀️
+          </span>
+        </button>
         {usuarioActual?.rol === "admin" && (
           <button
             onClick={() => (window.location.href = "/")}
@@ -477,7 +554,20 @@ export default function PuntoDeVentaView({
         }}
       >
         {/* Menu Section */}
-        <div style={{ flex: 2, minWidth: 0 }}>
+        <div
+          style={{
+            flex: 2,
+            minWidth: 0,
+            background: theme === "lite" ? "#fff" : "#232526",
+            borderRadius: 18,
+            boxShadow:
+              theme === "lite"
+                ? "0 4px 16px rgba(0,0,0,0.12)"
+                : "0 4px 16px #0008",
+            padding: 8,
+            transition: "background 0.3s",
+          }}
+        >
           {/* Tabs for Comida/Bebida */}
           <div
             style={{
@@ -544,16 +634,21 @@ export default function PuntoDeVentaView({
                   key={p.id}
                   onClick={() => agregarProducto(p)}
                   style={{
-                    background: "#fff",
+                    background: theme === "lite" ? "#fff" : "#333",
                     borderRadius: 18,
                     padding: 24,
-                    boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+                    boxShadow:
+                      theme === "lite"
+                        ? "0 4px 16px rgba(0,0,0,0.12)"
+                        : "0 4px 16px #0008",
                     cursor: "pointer",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    transition: "transform 0.2s",
+                    transition:
+                      "transform 0.2s, background 0.3s', color 0.3s', box-shadow 0.3s', border 0.3s',",
                     minHeight: 260,
+                    color: theme === "lite" ? "#222" : "#f5f5f5",
                   }}
                   onMouseEnter={(e) =>
                     (e.currentTarget.style.transform = "scale(1.07)")
@@ -608,12 +703,17 @@ export default function PuntoDeVentaView({
           style={{
             flex: 1,
             minWidth: 300,
-            background: "#fffde7",
+            background: theme === "lite" ? "#fffde7" : "#232526",
             borderRadius: 16,
-            boxShadow: "0 2px 12px rgba(0,0,0,0.1)",
+            boxShadow:
+              theme === "lite"
+                ? "0 2px 12px rgba(0,0,0,0.1)"
+                : "0 2px 12px #0008",
             padding: 24,
             display: "flex",
             flexDirection: "column",
+            color: theme === "lite" ? "#222" : "#f5f5f5",
+            transition: "background 0.3s, color 0.3s",
           }}
         >
           <h2
@@ -654,10 +754,14 @@ export default function PuntoDeVentaView({
                     alignItems: "center",
                     justifyContent: "space-between",
                     marginBottom: 8,
-                    background: "#fff",
+                    background: theme === "lite" ? "#fff" : "#333",
                     borderRadius: 8,
                     padding: "8px 12px",
-                    boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+                    boxShadow:
+                      theme === "lite"
+                        ? "0 1px 4px rgba(0,0,0,0.05)"
+                        : "0 1px 4px #0008",
+                    color: theme === "lite" ? "#222" : "#f5f5f5",
                   }}
                 >
                   <span
@@ -733,7 +837,7 @@ export default function PuntoDeVentaView({
             <button
               onClick={limpiarSeleccion}
               style={{
-                background: "#d32f2f",
+                background: theme === "lite" ? "#d32f2f" : "#b71c1c",
                 color: "#fff",
                 border: "none",
                 borderRadius: 8,
@@ -742,6 +846,7 @@ export default function PuntoDeVentaView({
                 fontSize: 16,
                 cursor: "pointer",
                 opacity: seleccionados.length === 0 ? 0.5 : 1,
+                transition: "background 0.3s",
               }}
               disabled={seleccionados.length === 0}
             >
@@ -749,7 +854,7 @@ export default function PuntoDeVentaView({
             </button>
             <button
               style={{
-                background: "#1976d2",
+                background: theme === "lite" ? "#1976d2" : "#1565c0",
                 color: "#fff",
                 border: "none",
                 borderRadius: 8,
@@ -758,6 +863,7 @@ export default function PuntoDeVentaView({
                 fontSize: 16,
                 cursor: "pointer",
                 opacity: seleccionados.length === 0 ? 0.5 : 1,
+                transition: "background 0.3s",
               }}
               disabled={seleccionados.length === 0}
               onClick={() => setShowClienteModal(true)} // <-- CAMBIA ESTO
@@ -777,7 +883,8 @@ export default function PuntoDeVentaView({
             left: 0,
             width: "100vw",
             height: "100vh",
-            background: "rgba(0,0,0,0.25)",
+            background:
+              theme === "lite" ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.55)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -786,9 +893,12 @@ export default function PuntoDeVentaView({
         >
           <div
             style={{
-              background: "#fff",
+              background: theme === "lite" ? "#fff" : "#232526",
               borderRadius: 16,
-              boxShadow: "0 8px 32px rgba(25, 118, 210, 0.18)",
+              boxShadow:
+                theme === "lite"
+                  ? "0 8px 32px rgba(25, 118, 210, 0.18)"
+                  : "0 8px 32px #0008",
               padding: 32,
               minWidth: 350,
               maxWidth: 420,
@@ -797,6 +907,8 @@ export default function PuntoDeVentaView({
               display: "flex",
               flexDirection: "column",
               gap: 18,
+              color: theme === "lite" ? "#222" : "#f5f5f5",
+              transition: "background 0.3s, color 0.3s",
             }}
           >
             <h3 style={{ color: "#1976d2", marginBottom: 12 }}>
