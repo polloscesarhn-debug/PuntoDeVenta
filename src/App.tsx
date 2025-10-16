@@ -127,7 +127,7 @@ function App() {
       <>
         <ResultadosCajaView />
         <div style={{ textAlign: "center", marginTop: 20 }}>
-          <button onClick={handleLogout}>Cerrar sesión</button>
+          
         </div>
       </>
     );
@@ -142,7 +142,7 @@ function App() {
       <>
         <AdminPanel onSelect={setView} user={user} />
         <div style={{ textAlign: "center", marginTop: 20 }}>
-          <button onClick={handleLogout}>Cerrar sesión</button>
+          
         </div>
       </>
     );
@@ -153,7 +153,7 @@ function App() {
       <>
         <UsuariosView onBack={() => setView("admin")} />
         <div style={{ textAlign: "center", marginTop: 20 }}>
-          <button onClick={handleLogout}>Cerrar sesión</button>
+          
         </div>
       </>
     );
@@ -164,7 +164,7 @@ function App() {
       <>
         <InventarioView onBack={() => setView("admin")} />
         <div style={{ textAlign: "center", marginTop: 20 }}>
-          <button onClick={handleLogout}>Cerrar sesión</button>
+          
         </div>
       </>
     );
@@ -175,7 +175,7 @@ function App() {
       <>
         <CaiFacturasView onBack={() => setView("admin")} />
         <div style={{ textAlign: "center", marginTop: 20 }}>
-          <button onClick={handleLogout}>Cerrar sesión</button>
+          
         </div>
       </>
     );
@@ -186,7 +186,7 @@ function App() {
       <>
         <GastosView onBack={() => setView("admin")} />
         <div style={{ textAlign: "center", marginTop: 20 }}>
-          <button onClick={handleLogout}>Cerrar sesión</button>
+          
         </div>
       </>
     );
@@ -200,7 +200,7 @@ function App() {
           onVerFacturasEmitidas={() => setView("facturasEmitidas")}
         />
         <div style={{ textAlign: "center", marginTop: 20 }}>
-          <button onClick={handleLogout}>Cerrar sesión</button>
+          
         </div>
       </>
     );
@@ -211,7 +211,7 @@ function App() {
       <>
         <FacturasEmitidasView onBack={() => setView("resultados")} />
         <div style={{ textAlign: "center", marginTop: 20 }}>
-          <button onClick={handleLogout}>Cerrar sesión</button>
+          
         </div>
       </>
     );
@@ -222,7 +222,7 @@ function App() {
       <>
         <AperturaView usuarioActual={user} caja={cajaApertura} />
         <div style={{ textAlign: "center", marginTop: 20 }}>
-          <button onClick={handleLogout}>Cerrar sesión</button>
+          
         </div>
       </>
     );
@@ -233,7 +233,7 @@ function App() {
       <>
         <PuntoDeVentaView setView={setView} />
         <div style={{ textAlign: "center", marginTop: 20 }}>
-          <button onClick={handleLogout}>Cerrar sesión</button>
+          
         </div>
       </>
     );
