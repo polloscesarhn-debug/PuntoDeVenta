@@ -2,10 +2,9 @@ import { useEffect } from 'react';
 
 interface LandingProps {
   onFinish: () => void;
-  user: any;
 }
 
-export default function Landing({ onFinish, user }: LandingProps) {
+export default function Landing({ onFinish }: LandingProps) {
   useEffect(() => {
     const timer = setTimeout(() => {
       onFinish();
