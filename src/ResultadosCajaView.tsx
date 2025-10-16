@@ -50,22 +50,46 @@ export default function ResultadosCajaView() {
         top: 0,
         left: 0,
         zIndex: 9999,
+        overflowY: "auto",
+        height: "100vh",
       }}
     >
+      <style>{`
+        @media (max-width: 600px) {
+          .caja-responsive {
+            padding: 16px !important;
+            min-width: 0 !important;
+            max-width: 98vw !important;
+            border-radius: 12px !important;
+            box-shadow: 0 4px 16px #1976d222 !important;
+          }
+          .caja-responsive h2 {
+            font-size: 1.3rem !important;
+          }
+          .caja-responsive img {
+            width: 120px !important;
+            height: 120px !important;
+          }
+        }
+      `}</style>
       <div
+        className="caja-responsive"
         style={{
           background: "linear-gradient(135deg, #e3f2fd 0%, #fff 100%)",
           borderRadius: 24,
           boxShadow: "0 12px 36px #1976d244",
-          padding: 48,
-          minWidth: 370,
+          padding: "3vw 4vw 3vw 4vw",
+          minWidth: 320,
           maxWidth: 480,
+          width: "100%",
           display: "flex",
           flexDirection: "column",
           gap: 22,
           margin: "auto",
           alignItems: "center",
           border: "1px solid #bbdefb",
+          maxHeight: "98vh",
+          overflowY: "auto",
         }}
       >
         <div
@@ -80,12 +104,13 @@ export default function ResultadosCajaView() {
             src="https://i.imgur.com/UiSIq00.jpeg"
             alt="Logo"
             style={{
-              width: 205,
-              height: 200,
+              width: "clamp(120px, 30vw, 205px)",
+              height: "clamp(120px, 28vw, 200px)",
               borderRadius: "50%",
               objectFit: "cover",
               boxShadow: "0 2px 8px #1976d222",
               background: "#fff",
+              transition: "width 0.3s, height 0.3s",
             }}
           />
         </div>
@@ -94,10 +119,11 @@ export default function ResultadosCajaView() {
             color: "#1976d2",
             marginBottom: 10,
             fontWeight: 900,
-            fontSize: 32,
+            fontSize: "clamp(1.3rem, 6vw, 2rem)",
             letterSpacing: 1.5,
             textShadow: "0 2px 8px #1976d222",
             textAlign: "center",
+            transition: "font-size 0.3s",
           }}
         >
           <span
@@ -117,15 +143,16 @@ export default function ResultadosCajaView() {
           <div
             style={{
               marginBottom: 18,
-              fontSize: 17,
+              fontSize: "clamp(1rem, 4vw, 1.1rem)",
               color: "#1976d2",
               background: "#e3f2fd",
               borderRadius: 12,
-              padding: "14px 22px",
+              padding: "10px 4vw",
               fontWeight: 700,
               boxShadow: "0 2px 8px #1976d222",
               textAlign: "center",
               border: "1px solid #bbdefb",
+              transition: "font-size 0.3s, padding 0.3s",
             }}
           >
             <span style={{ marginRight: 18 }}>
@@ -155,13 +182,14 @@ export default function ResultadosCajaView() {
             <div
               style={{
                 marginTop: 30,
-                padding: 24,
+                padding: "6vw 4vw",
                 background: "linear-gradient(135deg, #fffde7 0%, #fff 100%)",
                 borderRadius: 16,
                 boxShadow: "0 4px 16px #fbc02d44",
                 border: "1px solid #ffe082",
                 width: "100%",
                 maxWidth: 400,
+                transition: "padding 0.3s",
               }}
             >
               <h3

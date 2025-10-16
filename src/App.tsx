@@ -149,11 +149,11 @@ function App() {
   }
 
   if (view === "etiquetas" && user?.rol === "Admin") {
-    return <EtiquetasView />;
+    return <EtiquetasView onBack={() => setView("admin")} />;
   }
 
   if (view === "recibo" && user?.rol === "Admin") {
-    return <ReciboView />;
+    return <ReciboView onBack={() => setView("admin")} />;
   }
 
   if (view === "usuarios") {

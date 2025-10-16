@@ -562,9 +562,7 @@ export default function PuntoDeVentaView({
             const comprobanteHtml = `
               <div style='font-family:monospace; width:${
                 reciboConfig?.recibo_ancho || 58
-              }mm; margin:0; padding:${
-              reciboConfig?.recibo_padding || 8
-            }px;'>
+              }mm; margin:0; padding:${reciboConfig?.recibo_padding || 8}px;'>
                 <div style='font-size:${
                   reciboConfig?.recibo_fontsize || 20
                 }px; font-weight:700; color:#1976d2; text-align:center; margin-bottom:6px;'>${
@@ -632,15 +630,13 @@ export default function PuntoDeVentaView({
               const isv15 = seleccionados
                 .filter((p) => p.tipo === "comida")
                 .reduce(
-                  (sum, p) =>
-                    sum + (p.precio - p.precio / 1.15) * p.cantidad,
+                  (sum, p) => sum + (p.precio - p.precio / 1.15) * p.cantidad,
                   0
                 );
               const isv18 = seleccionados
                 .filter((p) => p.tipo === "bebida")
                 .reduce(
-                  (sum, p) =>
-                    sum + (p.precio - p.precio / 1.18) * p.cantidad,
+                  (sum, p) => sum + (p.precio - p.precio / 1.18) * p.cantidad,
                   0
                 );
               if (facturaActual === "Límite alcanzado") {
@@ -676,9 +672,7 @@ export default function PuntoDeVentaView({
               await supabase.from("facturas").insert([venta]);
               // Actualizar el número de factura actual en la vista
               if (facturaActual !== "Límite alcanzado") {
-                setFacturaActual(
-                  (parseInt(facturaActual) + 1).toString()
-                );
+                setFacturaActual((parseInt(facturaActual) + 1).toString());
               }
             } catch (err) {
               console.error("Error al guardar la venta:", err);

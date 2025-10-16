@@ -72,6 +72,12 @@ export default function UsuariosView({ onBack }: UsuariosViewProps) {
       setError(errorLimite);
       return;
     }
+    // Validación de contraseña: mínimo 6 dígitos numéricos
+    const clave = form.clave || "";
+    if (!/^[0-9]{6,}$/.test(clave)) {
+      setError("La contraseña debe tener mínimo 6 dígitos numéricos.");
+      return;
+    }
     setLoading(true);
     setError("");
     try {
@@ -415,7 +421,6 @@ export default function UsuariosView({ onBack }: UsuariosViewProps) {
           </button>
           <h1 className="page-title">Gestión de Usuarios</h1>
         </div>
-     
       </header>
 
       <main className="main-content">
@@ -502,8 +507,8 @@ export default function UsuariosView({ onBack }: UsuariosViewProps) {
 
         {/* Formulario */}
         <div className="form-section">
-          <h3 style={{ color: "#ffffff", marginBottom: '1rem' }}>
-            {editId ? '✏️ Editar Usuario' : '👤 Nuevo Usuario'}
+          <h3 style={{ color: "#ffffff", marginBottom: "1rem" }}>
+            {editId ? "✏️ Editar Usuario" : "👤 Nuevo Usuario"}
           </h3>
           <form onSubmit={handleSubmit} className="form-grid">
             <input
