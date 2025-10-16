@@ -15,6 +15,8 @@ import GastosView from "./GastosView";
 import ResultadosView from "./ResultadosView";
 import ResultadosCajaView from "./ResultadosCajaView";
 import FacturasEmitidasView from "./FacturasEmitidasView";
+import EtiquetasView from "./EtiquetasView";
+import ReciboView from "./ReciboView";
 import "./App.css";
 
 function App() {
@@ -35,6 +37,8 @@ function App() {
     | "facturasEmitidas"
     | "apertura"
     | "resultadosCaja"
+    | "etiquetas"
+    | "recibo"
     | "cajaOperada"
     | "cierreadmin"
   >("home");
@@ -126,9 +130,7 @@ function App() {
     return (
       <>
         <ResultadosCajaView />
-        <div style={{ textAlign: "center", marginTop: 20 }}>
-          
-        </div>
+        <div style={{ textAlign: "center", marginTop: 20 }}></div>
       </>
     );
   }
@@ -141,20 +143,24 @@ function App() {
     return (
       <>
         <AdminPanel onSelect={setView} user={user} />
-        <div style={{ textAlign: "center", marginTop: 20 }}>
-          
-        </div>
+        <div style={{ textAlign: "center", marginTop: 20 }}></div>
       </>
     );
+  }
+
+  if (view === "etiquetas" && user?.rol === "Admin") {
+    return <EtiquetasView />;
+  }
+
+  if (view === "recibo" && user?.rol === "Admin") {
+    return <ReciboView />;
   }
 
   if (view === "usuarios") {
     return (
       <>
         <UsuariosView onBack={() => setView("admin")} />
-        <div style={{ textAlign: "center", marginTop: 20 }}>
-          
-        </div>
+        <div style={{ textAlign: "center", marginTop: 20 }}></div>
       </>
     );
   }
@@ -163,9 +169,7 @@ function App() {
     return (
       <>
         <InventarioView onBack={() => setView("admin")} />
-        <div style={{ textAlign: "center", marginTop: 20 }}>
-          
-        </div>
+        <div style={{ textAlign: "center", marginTop: 20 }}></div>
       </>
     );
   }
@@ -174,9 +178,7 @@ function App() {
     return (
       <>
         <CaiFacturasView onBack={() => setView("admin")} />
-        <div style={{ textAlign: "center", marginTop: 20 }}>
-          
-        </div>
+        <div style={{ textAlign: "center", marginTop: 20 }}></div>
       </>
     );
   }
@@ -185,9 +187,7 @@ function App() {
     return (
       <>
         <GastosView onBack={() => setView("admin")} />
-        <div style={{ textAlign: "center", marginTop: 20 }}>
-          
-        </div>
+        <div style={{ textAlign: "center", marginTop: 20 }}></div>
       </>
     );
   }
@@ -199,9 +199,7 @@ function App() {
           onBack={() => setView("admin")}
           onVerFacturasEmitidas={() => setView("facturasEmitidas")}
         />
-        <div style={{ textAlign: "center", marginTop: 20 }}>
-          
-        </div>
+        <div style={{ textAlign: "center", marginTop: 20 }}></div>
       </>
     );
   }
@@ -210,9 +208,7 @@ function App() {
     return (
       <>
         <FacturasEmitidasView onBack={() => setView("resultados")} />
-        <div style={{ textAlign: "center", marginTop: 20 }}>
-          
-        </div>
+        <div style={{ textAlign: "center", marginTop: 20 }}></div>
       </>
     );
   }
@@ -221,9 +217,7 @@ function App() {
     return (
       <>
         <AperturaView usuarioActual={user} caja={cajaApertura} />
-        <div style={{ textAlign: "center", marginTop: 20 }}>
-          
-        </div>
+        <div style={{ textAlign: "center", marginTop: 20 }}></div>
       </>
     );
   }
@@ -232,9 +226,7 @@ function App() {
     return (
       <>
         <PuntoDeVentaView setView={setView} />
-        <div style={{ textAlign: "center", marginTop: 20 }}>
-          
-        </div>
+        <div style={{ textAlign: "center", marginTop: 20 }}></div>
       </>
     );
   }

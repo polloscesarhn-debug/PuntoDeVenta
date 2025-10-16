@@ -66,14 +66,14 @@ export default function PuntoDeVentaView({
   const [facturaActual, setFacturaActual] = useState<string>("");
   const [showPagoModal, setShowPagoModal] = useState(false);
   const [showClienteModal, setShowClienteModal] = useState(false);
-  const [showFacturaModal, setShowFacturaModal] = useState(false);
+  // Eliminado showFacturaModal
   const [nombreCliente, setNombreCliente] = useState("");
   const [caiInfo, setCaiInfo] = useState<{
     caja_asignada: string;
     nombre_cajero: string;
     cai: string;
   } | null>(null);
-  const [online] = useState(navigator.onLine);
+  const online = navigator.onLine;
 
   const [productos, setProductos] = useState<Producto[]>([]);
   const [seleccionados, setSeleccionados] = useState<Seleccion[]>([]);
@@ -514,9 +514,179 @@ export default function PuntoDeVentaView({
         totalPedido={total}
         cliente={nombreCliente}
         factura_venta={facturaActual}
-        onPagoConfirmado={() => {
+        onPagoConfirmado={async () => {
           setShowPagoModal(false);
-          setShowFacturaModal(true);
+          setTimeout(async () => {
+            // Consultar configuración de comanda y recibo desde Supabase
+            const { data: etiquetaConfig } = await supabase
+              .from("etiquetas_config")
+              .select("*")
+              .eq("nombre", "default")
+              .single();
+            const { data: reciboConfig } = await supabase
+              .from("recibo_config")
+              .select("*")
+              .eq("nombre", "default")
+              .single();
+            // Comanda
+            const comandaHtml = `
+              <div style='font-family:monospace; width:${
+                etiquetaConfig?.etiqueta_ancho || 58
+              }mm; margin:0; padding:${
+              etiquetaConfig?.etiqueta_padding || 8
+            }px;'>
+                <div style='font-size:${
+                  etiquetaConfig?.etiqueta_fontsize || 20
+                }px; font-weight:700; color:#388e3c; text-align:center; margin-bottom:6px;'>${
+              etiquetaConfig?.etiqueta_comanda || "COMANDA COCINA"
+            }</div>
+                <div style='font-size:16px; font-weight:600; color:#222; text-align:center; margin-bottom:10px;'>Cliente: <b>${nombreCliente}</b></div>
+                <ul style='list-style:none; padding:0; margin-bottom:0;'>
+                  ${seleccionados
+                    .filter((p) => p.tipo === "comida")
+                    .map(
+                      (p) =>
+                        `<li style='font-size:${
+                          etiquetaConfig?.etiqueta_fontsize || 17
+                        }px; margin-bottom:8px; border-bottom:1px dashed #eee; text-align:left;'><span style='font-weight:700;'>${
+                          p.nombre
+                        }</span> <span style='float:right;'>L ${p.precio.toFixed(
+                          2
+                        )} x${p.cantidad}</span></li>`
+                    )
+                    .join("")}
+                </ul>
+              </div>
+            `;
+            // Recibo
+            const comprobanteHtml = `
+              <div style='font-family:monospace; width:${
+                reciboConfig?.recibo_ancho || 58
+              }mm; margin:0; padding:${
+              reciboConfig?.recibo_padding || 8
+            }px;'>
+                <div style='font-size:${
+                  reciboConfig?.recibo_fontsize || 20
+                }px; font-weight:700; color:#1976d2; text-align:center; margin-bottom:6px;'>${
+              reciboConfig?.recibo_texto || "RECIBO CLIENTE"
+            }</div>
+                <div style='font-size:16px; font-weight:600; color:#222; text-align:center; margin-bottom:10px;'>Cliente: <b>${nombreCliente}</b></div>
+                <ul style='list-style:none; padding:0; margin-bottom:0;'>
+                  ${seleccionados
+                    .map(
+                      (p) =>
+                        `<li style='font-size:${
+                          reciboConfig?.recibo_fontsize || 17
+                        }px; margin-bottom:8px; border-bottom:1px dashed #eee; text-align:left;'><span style='font-weight:700;'>${
+                          p.nombre
+                        }</span> <span style='float:right;'>L ${p.precio.toFixed(
+                          2
+                        )} x${p.cantidad}</span></li>`
+                    )
+                    .join("")}
+                </ul>
+                <div style='font-weight:700; font-size:${
+                  Number(reciboConfig?.recibo_fontsize || 18) + 2
+                }px; margin-top:12px; text-align:right;'>Total: L ${total.toFixed(
+              2
+            )}</div>
+              </div>
+            `;
+            // Unir ambos con salto de página
+            const printHtml = `
+              <html>
+                <head>
+                  <title>Recibo y Comanda</title>
+                  <style>
+                    @media print {
+                      .page-break { page-break-after: always; }
+                    }
+                  </style>
+                </head>
+                <body>
+                  <div>${comprobanteHtml}</div>
+                  <div class="page-break"></div>
+                  <div>${comandaHtml}</div>
+                </body>
+              </html>
+            `;
+            const printWindow = window.open("", "", "height=800,width=400");
+            if (printWindow) {
+              printWindow.document.write(printHtml);
+              printWindow.document.close();
+              printWindow.focus();
+              printWindow.print();
+              printWindow.close();
+            }
+            // Guardar venta en la tabla 'facturas' con nuevos campos
+            try {
+              const subTotal = seleccionados.reduce((sum, p) => {
+                if (p.tipo === "comida") {
+                  return sum + (p.precio / 1.15) * p.cantidad;
+                } else if (p.tipo === "bebida") {
+                  return sum + (p.precio / 1.18) * p.cantidad;
+                } else {
+                  return sum + p.precio * p.cantidad;
+                }
+              }, 0);
+              const isv15 = seleccionados
+                .filter((p) => p.tipo === "comida")
+                .reduce(
+                  (sum, p) =>
+                    sum + (p.precio - p.precio / 1.15) * p.cantidad,
+                  0
+                );
+              const isv18 = seleccionados
+                .filter((p) => p.tipo === "bebida")
+                .reduce(
+                  (sum, p) =>
+                    sum + (p.precio - p.precio / 1.18) * p.cantidad,
+                  0
+                );
+              if (facturaActual === "Límite alcanzado") {
+                alert(
+                  "¡Se ha alcanzado el límite de facturas para este cajero!"
+                );
+                return;
+              }
+              const factura = facturaActual;
+              const venta = {
+                fecha_hora: new Date().toISOString(),
+                cajero: usuarioActual?.nombre || "",
+                caja: caiInfo?.caja_asignada || "",
+                cai: caiInfo && caiInfo.cai ? caiInfo.cai : "",
+                factura,
+                cliente: nombreCliente,
+                productos: JSON.stringify(
+                  seleccionados.map((p) => ({
+                    id: p.id,
+                    nombre: p.nombre,
+                    precio: p.precio,
+                    cantidad: p.cantidad,
+                    tipo: p.tipo,
+                  }))
+                ),
+                sub_total: subTotal.toFixed(2),
+                isv_15: isv15.toFixed(2),
+                isv_18: isv18.toFixed(2),
+                total: seleccionados
+                  .reduce((sum, p) => sum + p.precio * p.cantidad, 0)
+                  .toFixed(2),
+              };
+              await supabase.from("facturas").insert([venta]);
+              // Actualizar el número de factura actual en la vista
+              if (facturaActual !== "Límite alcanzado") {
+                setFacturaActual(
+                  (parseInt(facturaActual) + 1).toString()
+                );
+              }
+            } catch (err) {
+              console.error("Error al guardar la venta:", err);
+            }
+            // Limpiar selección después de imprimir
+            limpiarSeleccion();
+            setNombreCliente("");
+          }, 300);
         }}
       />
       <h1
@@ -968,353 +1138,7 @@ export default function PuntoDeVentaView({
       )}
 
       {/* Modal para requerir factura */}
-      {showFacturaModal && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            background: "rgba(0,0,0,0.25)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999,
-          }}
-        >
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 16,
-              boxShadow: "0 8px 32px rgba(25, 118, 210, 0.18)",
-              padding: 32,
-              minWidth: 350,
-              maxWidth: 420,
-              width: "100%",
-              position: "relative",
-              display: "flex",
-              flexDirection: "column",
-              gap: 18,
-            }}
-          >
-            <h3 style={{ color: "#1976d2", marginBottom: 12 }}>
-              ¿Requiere factura?
-            </h3>
-            <div style={{ display: "flex", gap: 32, justifyContent: "center" }}>
-              <button
-                onClick={async () => {
-                  setShowFacturaModal(false);
-                  setTimeout(async () => {
-                    // Comanda con nombre del cliente y mejor formato
-                    const comandaHtml = `
-                      <div style='font-family:monospace; width:58mm; margin:0; padding:0;'>
-                        <div style='font-size:20px; font-weight:700; color:#388e3c; text-align:center; margin-bottom:6px;'>COMANDA COCINA</div>
-                        <div style='font-size:16px; font-weight:600; color:#222; text-align:center; margin-bottom:10px;'>Cliente: <b>${nombreCliente}</b></div>
-                        <ul style='list-style:none; padding:0; margin-bottom:0;'>
-                          ${seleccionados
-                            .filter((p) => p.tipo === "comida")
-                            .map(
-                              (p) =>
-                                `<li style='font-size:17px; margin-bottom:8px; border-bottom:1px dashed #eee; text-align:left;'><span style='font-weight:700;'>${
-                                  p.nombre
-                                }</span> <span style='float:right;'>L ${p.precio.toFixed(
-                                  2
-                                )} x${p.cantidad}</span></li>`
-                            )
-                            .join("")}
-                        </ul>
-                      </div>
-                    `;
-                    // Comprobante con nombre, precio y cantidad
-                    const comprobanteHtml = `
-                      <div style='font-family:monospace; width:58mm; margin:0; padding:0;'>
-                        <div style='font-size:20px; font-weight:700; color:#1976d2; text-align:center; margin-bottom:6px;'>COMPROBANTE CLIENTE</div>
-                        <div style='font-size:16px; font-weight:600; color:#222; text-align:center; margin-bottom:10px;'>Cliente: <b>${nombreCliente}</b></div>
-                        <ul style='list-style:none; padding:0; margin-bottom:0;'>
-                          ${seleccionados
-                            .map(
-                              (p) =>
-                                `<li style='font-size:17px; margin-bottom:8px; border-bottom:1px dashed #eee; text-align:left;'><span style='font-weight:700;'>${
-                                  p.nombre
-                                }</span> <span style='float:right;'>L ${p.precio.toFixed(
-                                  2
-                                )} x${p.cantidad}</span></li>`
-                            )
-                            .join("")}
-                        </ul>
-                        <div style='font-weight:700; font-size:18px; margin-top:12px; text-align:right;'>Total: L ${total.toFixed(
-                          2
-                        )}</div>
-                      </div>
-                    `;
-                    // Imprimir comanda
-                    const printWindow = window.open(
-                      "",
-                      "",
-                      "height=600,width=400"
-                    );
-                    if (printWindow) {
-                      printWindow.document.write(
-                        `<html><head><title>Comanda Cocina</title></head><body>${comandaHtml}</body></html>`
-                      );
-                      printWindow.document.close();
-                      printWindow.focus();
-                      printWindow.print();
-                      printWindow.close();
-                    }
-                    // Imprimir comprobante
-                    const printWindow2 = window.open(
-                      "",
-                      "",
-                      "height=600,width=400"
-                    );
-                    if (printWindow2) {
-                      printWindow2.document.write(
-                        `<html><head><title>Comprobante Cliente</title></head><body>${comprobanteHtml}</body></html>`
-                      );
-                      printWindow2.document.close();
-                      printWindow2.focus();
-                      printWindow2.print();
-                      printWindow2.close();
-                    }
-                    // Guardar venta en la tabla 'facturas' con nuevos campos
-                    try {
-                      const subTotal = seleccionados.reduce((sum, p) => {
-                        if (p.tipo === "comida") {
-                          return sum + (p.precio / 1.15) * p.cantidad;
-                        } else if (p.tipo === "bebida") {
-                          return sum + (p.precio / 1.18) * p.cantidad;
-                        } else {
-                          return sum + p.precio * p.cantidad;
-                        }
-                      }, 0);
-                      const isv15 = seleccionados
-                        .filter((p) => p.tipo === "comida")
-                        .reduce(
-                          (sum, p) =>
-                            sum + (p.precio - p.precio / 1.15) * p.cantidad,
-                          0
-                        );
-                      const isv18 = seleccionados
-                        .filter((p) => p.tipo === "bebida")
-                        .reduce(
-                          (sum, p) =>
-                            sum + (p.precio - p.precio / 1.18) * p.cantidad,
-                          0
-                        );
-                      if (facturaActual === "Límite alcanzado") {
-                        alert(
-                          "¡Se ha alcanzado el límite de facturas para este cajero!"
-                        );
-                        return;
-                      }
-                      const factura = facturaActual;
-                      const venta = {
-                        fecha_hora: new Date().toISOString(),
-                        cajero: usuarioActual?.nombre || "",
-                        caja: caiInfo?.caja_asignada || "",
-                        cai: caiInfo && caiInfo.cai ? caiInfo.cai : "",
-                        factura,
-                        cliente: nombreCliente,
-                        productos: JSON.stringify(
-                          seleccionados.map((p) => ({
-                            id: p.id,
-                            nombre: p.nombre,
-                            precio: p.precio,
-                            cantidad: p.cantidad,
-                            tipo: p.tipo,
-                          }))
-                        ),
-                        sub_total: subTotal.toFixed(2),
-                        isv_15: isv15.toFixed(2),
-                        isv_18: isv18.toFixed(2),
-                        total: seleccionados
-                          .reduce((sum, p) => sum + p.precio * p.cantidad, 0)
-                          .toFixed(2),
-                      };
-                      await supabase.from("facturas").insert([venta]);
-                      // Actualizar el número de factura actual en la vista
-                      if (facturaActual !== "Límite alcanzado") {
-                        setFacturaActual(
-                          (parseInt(facturaActual) + 1).toString()
-                        );
-                      }
-                    } catch (err) {
-                      console.error("Error al guardar la venta:", err);
-                    }
-                    // Limpiar selección después de imprimir
-                    limpiarSeleccion();
-                    setNombreCliente("");
-                  }, 300);
-                }}
-                style={{
-                  background: "#388e3c",
-                  color: "#fff",
-                  borderRadius: 8,
-                  border: "none",
-                  padding: "10px 32px",
-                  fontWeight: 600,
-                  fontSize: 16,
-                }}
-              >
-                Sí
-              </button>
-              <button
-                onClick={async () => {
-                  setShowFacturaModal(false);
-                  setTimeout(async () => {
-                    const comandaHtml = `
-                      <div style='font-family:monospace; width:58mm; margin:0; padding:0;'>
-                        <div style='font-size:20px; font-weight:700; color:#388e3c; text-align:center; margin-bottom:6px;'>COMANDA COCINA</div>
-                        <div style='font-size:16px; font-weight:600; color:#222; text-align:center; margin-bottom:10px;'>Cliente: <b>${nombreCliente}</b></div>
-                        <ul style='list-style:none; padding:0; margin-bottom:0;'>
-                          ${seleccionados
-                            .filter((p) => p.tipo === "comida")
-                            .map(
-                              (p) =>
-                                `<li style='font-size:17px; margin-bottom:8px; border-bottom:1px dashed #eee; text-align:left;'><span style='font-weight:700;'>${
-                                  p.nombre
-                                }</span> <span style='float:right;'>L ${p.precio.toFixed(
-                                  2
-                                )} x${p.cantidad}</span></li>`
-                            )
-                            .join("")}
-                        </ul>
-                      </div>
-                    `;
-                    const comprobanteHtml = `
-                      <div style='font-family:monospace; width:58mm; margin:0; padding:0;'>
-                        <div style='font-size:20px; font-weight:700; color:#1976d2; text-align:center; margin-bottom:6px;'>COMPROBANTE CLIENTE</div>
-                        <div style='font-size:16px; font-weight:600; color:#222; text-align:center; margin-bottom:10px;'>Cliente: <b>${nombreCliente}</b></div>
-                        <ul style='list-style:none; padding:0; margin-bottom:0;'>
-                          ${seleccionados
-                            .map(
-                              (p) =>
-                                `<li style='font-size:17px; margin-bottom:8px; border-bottom:1px dashed #eee; text-align:left;'><span style='font-weight:700;'>${
-                                  p.nombre
-                                }</span> <span style='float:right;'>L ${p.precio.toFixed(
-                                  2
-                                )} x${p.cantidad}</span></li>`
-                            )
-                            .join("")}
-                        </ul>
-                        <div style='font-weight:700; font-size:18px; margin-top:12px; text-align:right;'>Total: L ${total.toFixed(
-                          2
-                        )}</div>
-                      </div>
-                    `;
-                    const printWindow = window.open(
-                      "",
-                      "",
-                      "height=600,width=400"
-                    );
-                    if (printWindow) {
-                      printWindow.document.write(
-                        `<html><head><title>Comanda Cocina</title></head><body>${comandaHtml}</body></html>`
-                      );
-                      printWindow.document.close();
-                      printWindow.focus();
-                      printWindow.print();
-                      printWindow.close();
-                    }
-                    const printWindow2 = window.open(
-                      "",
-                      "",
-                      "height=600,width=400"
-                    );
-                    if (printWindow2) {
-                      printWindow2.document.write(
-                        `<html><head><title>Comprobante Cliente</title></head><body>${comprobanteHtml}</body></html>`
-                      );
-                      printWindow2.document.close();
-                      printWindow2.focus();
-                      printWindow2.print();
-                      printWindow2.close();
-                    }
-                    try {
-                      // Cálculo correcto de sub_total, isv_15, isv_18 y total según tipo_impuesto de cada producto
-                      let subTotal = 0;
-                      let isv15 = 0;
-                      let isv18 = 0;
-                      for (const p of seleccionados) {
-                        // Buscar el producto en la lista de productos para obtener tipo_impuesto
-                        const prod = productos.find((prod) => prod.id === p.id);
-                        const tipoImpuesto = prod?.tipo_impuesto || "venta";
-                        if (tipoImpuesto === "venta") {
-                          // ISV 15%
-                          const base = p.precio / 1.15;
-                          subTotal += base * p.cantidad;
-                          isv15 += (p.precio - base) * p.cantidad;
-                        } else if (tipoImpuesto === "alcohol") {
-                          // ISV 18%
-                          const base = p.precio / 1.18;
-                          subTotal += base * p.cantidad;
-                          isv18 += (p.precio - base) * p.cantidad;
-                        } else {
-                          // Sin impuesto
-                          subTotal += p.precio * p.cantidad;
-                        }
-                      }
-                      if (facturaActual === "Límite alcanzado") {
-                        alert(
-                          "¡Se ha alcanzado el límite de facturas para este cajero!"
-                        );
-                        return;
-                      }
-                      const factura = facturaActual;
-                      const venta = {
-                        fecha_hora: new Date().toISOString(),
-                        cajero: usuarioActual?.nombre || "",
-                        caja: caiInfo?.caja_asignada || "",
-                        cai: caiInfo && caiInfo.cai ? caiInfo.cai : "",
-                        factura,
-                        cliente: nombreCliente,
-                        productos: JSON.stringify(
-                          seleccionados.map((p) => ({
-                            id: p.id,
-                            nombre: p.nombre,
-                            precio: p.precio,
-                            cantidad: p.cantidad,
-                            tipo: p.tipo,
-                          }))
-                        ),
-                        sub_total: subTotal.toFixed(2),
-                        isv_15: isv15.toFixed(2),
-                        isv_18: isv18.toFixed(2),
-                        total: seleccionados
-                          .reduce((sum, p) => sum + p.precio * p.cantidad, 0)
-                          .toFixed(2),
-                      };
-                      await supabase.from("facturas").insert([venta]);
-                      if (facturaActual !== "Límite alcanzado") {
-                        setFacturaActual(
-                          (parseInt(facturaActual) + 1).toString()
-                        );
-                      }
-                    } catch (err) {
-                      console.error("Error al guardar la venta:", err);
-                    }
-                    limpiarSeleccion();
-                    setNombreCliente("");
-                  }, 300);
-                }}
-                style={{
-                  background: "#1976d2",
-                  color: "#fff",
-                  borderRadius: 8,
-                  border: "none",
-                  padding: "10px 32px",
-                  fontWeight: 600,
-                  fontSize: 16,
-                }}
-              >
-                No
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Eliminado el modal de confirmación de factura */}
     </div>
   );
 }

@@ -13,7 +13,9 @@ type ViewType =
   | "apertura"
   | "resultadosCaja"
   | "cajaOperada"
-  | "cierreadmin";
+  | "cierreadmin"
+  | "etiquetas"
+  | "recibo";
 
 const cards: {
   label: string;
@@ -63,6 +65,20 @@ const cards: {
     view: "cierreadmin",
     color: "#f57c00",
     subtitle: "Conciliación diaria",
+  },
+  {
+    label: "Configurar Etiquetas Comanda",
+    icon: "🏷️",
+    view: "etiquetas",
+    color: "#43a047",
+    subtitle: "Editar textos de impresión comanda",
+  },
+  {
+    label: "Configurar Recibo Cliente",
+    icon: "🧾",
+    view: "recibo",
+    color: "#1976d2",
+    subtitle: "Editar textos de recibo cliente",
   },
 ];
 
