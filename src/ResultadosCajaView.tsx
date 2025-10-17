@@ -23,16 +23,11 @@ export default function ResultadosCajaView() {
   useEffect(() => {
     const fetchCierres = async () => {
       setLoading(true);
-      // Obtener fecha actual en formato YYYY-MM-DD
-      const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, "0");
-      const dd = String(today.getDate()).padStart(2, "0");
-      const fechaHoy = `${yyyy}-${mm}-${dd}`;
-
-      // Consultar registros de tipo 'cierre' entre las 00:00 y 23:59 del día actual
-      const fechaInicio = `${fechaHoy} 00:00:00`;
-      const fechaFin = `${fechaHoy} 23:59:59`;
+      // Obtener fecha y hora actual y hace 24 horas
+      const ahora = new Date();
+      const hace24h = new Date(ahora.getTime() - 24 * 60 * 60 * 1000);
+      const fechaInicio = hace24h.toISOString();
+      const fechaFin = ahora.toISOString();
       let query = supabase
         .from("cierres")
         .select("*")
@@ -221,7 +216,7 @@ export default function ResultadosCajaView() {
               </h3>
               {cierres.length > 0 &&
                 cierres
-                  .filter(cierre => {
+                  .filter((cierre) => {
                     // Filtrar por usuario actual y fecha actual (solo fecha, sin hora)
                     if (!usuarioActual) return false;
                     const hoy = new Date();
@@ -229,58 +224,97 @@ export default function ResultadosCajaView() {
                     const mm = String(hoy.getMonth() + 1).padStart(2, "0");
                     const dd = String(hoy.getDate()).padStart(2, "0");
                     const fechaHoy = `${yyyy}-${mm}-${dd}`;
-                    // Aceptar si la fecha del cierre inicia con la fecha actual (por si hay diferencias de formato)
                     return (
                       cierre.cajero_id === usuarioActual.id &&
-                      cierre.fecha && cierre.fecha.startsWith(fechaHoy)
+                      cierre.fecha &&
+                      cierre.fecha.startsWith(fechaHoy)
                     );
                   })
                   .map((cierre, idx) => {
-                  // Parsear valores numéricos
-                  const fondoFijoRegistrado =
-                    parseFloat(cierre.fondo_fijo_registrado) || 0;
-                  const fondoFijo = parseFloat(cierre.fondo_fijo) || 0;
-                  const montoTarjetaDia =
-                    parseFloat(cierre.monto_tarjeta_dia) || 0;
-                  const transferenciasRegistradas =
-                    parseFloat(cierre.transferencias_registradas) || 0;
-                  const transferenciasDia =
-                    parseFloat(cierre.transferencias_dia) || 0;
-
-                  const efectivoRegistrado =
-                    parseFloat(cierre.efectivo_registrado) || 0;
-                  const efectivoDia = parseFloat(cierre.efectivo_dia) || 0;
-                  const montoTarjetaRegistrado =
-                    parseFloat(cierre.monto_tarjeta_registrado) || 0;
-                  // montoTarjetaDia ya está definido
-                  // transferenciasRegistradas ya está definido
-                  // transferenciasDia ya está definido
-
-                  const diferenciaEfectivo = efectivoRegistrado - efectivoDia;
-                  const diferenciaTarjeta =
-                    montoTarjetaRegistrado - montoTarjetaDia;
-                  const diferenciaTransferencia =
-                    transferenciasRegistradas - transferenciasDia;
-
-                  return (
-                    <div key={idx} style={{ marginBottom: 10 }}>
-                      <div>
-                        <b>FONDO FIJO:</b>{" "}
-                        {(fondoFijoRegistrado - fondoFijo).toFixed(2)}
+                    // Mostrar todos los campos relevantes del cierre
+                    return (
+                      <div key={idx} style={{ marginBottom: 24 }}>
+                        <table style={{ width: "100%", background: "#fffde7", borderRadius: 8, marginBottom: 8, fontSize: 15 }}>
+                          <tbody>
+                            <tr><td><b>Fondo Fijo Registrado:</b></td><td>{cierre.fondo_fijo_registrado}</td></tr>
+                            <tr><td><b>Fondo Fijo:</b></td><td>{cierre.fondo_fijo}</td></tr>
+                            <tr><td><b>Efectivo Registrado:</b></td><td>{cierre.efectivo_registrado}</td></tr>
+                            <tr><td><b>Efectivo Día:</b></td><td>{cierre.efectivo_dia}</td></tr>
+                            <tr><td><b>Monto Tarjeta Registrado:</b></td><td>{cierre.monto_tarjeta_registrado}</td></tr>
+                            <tr><td><b>Monto Tarjeta Día:</b></td><td>{cierre.monto_tarjeta_dia}</td></tr>
+                            <tr><td><b>Transferencias Registradas:</b></td><td>{cierre.transferencias_registradas}</td></tr>
+                            <tr><td><b>Transferencias Día:</b></td><td>{cierre.transferencias_dia}</td></tr>
+                            <tr><td><b>Diferencia:</b></td><td>{cierre.diferencia}</td></tr>
+                            <tr><td><b>Observación:</b></td><td>{cierre.observacion || '-'}</td></tr>
+                          </tbody>
+                        </table>
+                        {/* Cálculos de diferencias */}
+                        <div><b>FONDO FIJO:</b> {((parseFloat(cierre.fondo_fijo_registrado) || 0) - (parseFloat(cierre.fondo_fijo) || 0)).toFixed(2)}</div>
+                        <div><b>EFECTIVO:</b> {((parseFloat(cierre.efectivo_registrado) || 0) - (parseFloat(cierre.efectivo_dia) || 0)).toFixed(2)}</div>
+                        <div><b>TARJETA:</b> {((parseFloat(cierre.monto_tarjeta_registrado) || 0) - (parseFloat(cierre.monto_tarjeta_dia) || 0)).toFixed(2)}</div>
+                        <div><b>TRANSFERENCIA:</b> {((parseFloat(cierre.transferencias_registradas) || 0) - (parseFloat(cierre.transferencias_dia) || 0)).toFixed(2)}</div>
+                        {/* Input para aclarar si la diferencia es distinta de 0 */}
+                        {parseFloat(cierre.diferencia) !== 0 && (
+                          <form
+                            onSubmit={async (e) => {
+                              e.preventDefault();
+                              setValidando(true);
+                              // Consultar clave en Supabase
+                              const { data, error } = await supabase
+                                .from("claves_autorizacion")
+                                .select("clave")
+                                .eq("id", 1)
+                                .single();
+                              if (!error && data && String(data.clave) === clave) {
+                                setTimeout(() => {
+                                  setValidando(false);
+                                  setCorrecto(true);
+                                  setTimeout(async () => {
+                                    setCorrecto(false);
+                                    // Actualizar observación del cierre
+                                    await supabase
+                                      .from("cierres")
+                                      .update({ observacion: "aclarado" })
+                                      .eq("id", cierre.id)
+                                      .eq("cajero_id", usuarioActual.id);
+                                    window.location.reload();
+                                  }, 100);
+                                }, 800);
+                              } else {
+                                setValidando(false);
+                                setCorrecto(false);
+                                alert("Clave incorrecta");
+                              }
+                            }}
+                            style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}
+                          >
+                            <label htmlFor={`claveAclaracion${idx}`} style={{ fontWeight: 600 }}>
+                              CLAVE DE ACLARACION
+                            </label>
+                            <input
+                              id={`claveAclaracion${idx}`}
+                              type="text"
+                              value={clave}
+                              onChange={(e) => setClave(e.target.value)}
+                              style={{ padding: 8, borderRadius: 6, border: "1px solid #1976d2", fontSize: 16 }}
+                            />
+                            <button
+                              type="submit"
+                              style={{ padding: "10px 18px", background: "#1976d2", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 16, cursor: "pointer" }}
+                              disabled={validando}
+                            >
+                              {validando ? "Validando..." : "GUARDAR"}
+                            </button>
+                            {correcto && (
+                              <div style={{ color: "#388e3c", fontWeight: 700, fontSize: 18, marginTop: 8 }}>
+                                Correcto, aclarando...
+                              </div>
+                            )}
+                          </form>
+                        )}
                       </div>
-                      <div>
-                        <b>EFECTIVO:</b> {diferenciaEfectivo.toFixed(2)}
-                      </div>
-                      <div>
-                        <b>TARJETA:</b> {diferenciaTarjeta.toFixed(2)}
-                      </div>
-                      <div>
-                        <b>TRANSFERENCIA:</b>{" "}
-                        {diferenciaTransferencia.toFixed(2)}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               {cierres.length > 0 && (
                 <>
                   <div style={{ marginTop: 12, fontWeight: 700, fontSize: 18 }}>
@@ -389,7 +423,10 @@ export default function ResultadosCajaView() {
                         (async () => {
                           const today = new Date();
                           const yyyy = today.getFullYear();
-                          const mm = String(today.getMonth() + 1).padStart(2, "0");
+                          const mm = String(today.getMonth() + 1).padStart(
+                            2,
+                            "0"
+                          );
                           const dd = String(today.getDate()).padStart(2, "0");
                           const fechaHoy = `${yyyy}-${mm}-${dd}`;
                           const { data: cierreHoy } = await supabase
