@@ -807,6 +807,3 @@ export default function UsuariosView({ onBack }: UsuariosViewProps) {
     </div>
   );
 }
-function setUsuarios(nuevosUsuarios: any) {
-  throw new Error("Function not implemented.");
-}
