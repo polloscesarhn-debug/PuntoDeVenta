@@ -222,17 +222,17 @@ export default function ResultadosCajaView() {
               {cierres.length > 0 &&
                 cierres
                   .filter(cierre => {
-                    // Filtrar por usuario actual y fecha actual
+                    // Filtrar por usuario actual y fecha actual (solo fecha, sin hora)
                     if (!usuarioActual) return false;
                     const hoy = new Date();
                     const yyyy = hoy.getFullYear();
                     const mm = String(hoy.getMonth() + 1).padStart(2, "0");
                     const dd = String(hoy.getDate()).padStart(2, "0");
                     const fechaHoy = `${yyyy}-${mm}-${dd}`;
-                    const fechaCierre = cierre.fecha?.slice(0, 10);
+                    // Aceptar si la fecha del cierre inicia con la fecha actual (por si hay diferencias de formato)
                     return (
                       cierre.cajero_id === usuarioActual.id &&
-                      fechaCierre === fechaHoy
+                      cierre.fecha && cierre.fecha.startsWith(fechaHoy)
                     );
                   })
                   .map((cierre, idx) => {
