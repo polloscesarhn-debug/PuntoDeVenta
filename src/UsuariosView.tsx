@@ -1,3 +1,5 @@
+import AdminEditModal from "./AdminEditModal";
+// ...existing code...
 import { useEffect, useState } from "react";
 
 interface Usuario {
@@ -15,21 +17,74 @@ interface UsuariosViewProps {
 }
 
 export default function UsuariosView({ onBack }: UsuariosViewProps) {
+  // Estados para el modal de edición de Admin
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [adminEditId, setAdminEditId] = useState<string | null>(null);
+  const [adminNombre, setAdminNombre] = useState("");
+  const [adminClave, setAdminClave] = useState("");
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [adminError, setAdminError] = useState("");
+
+  const handleAdminUpdate = (adminUser: Usuario) => {
+    setAdminNombre(adminUser.nombre || "");
+    setAdminClave("");
+    setAdminEditId(adminUser.id);
+    setShowAdminModal(true);
+  };
+
+  const handleAdminModalClose = () => {
+    setShowAdminModal(false);
+    setAdminEditId(null);
+    setAdminNombre("");
+    setAdminClave("");
+    setAdminError("");
+  };
+
+  const handleAdminModalSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    // Debe tener mínimo 6 caracteres, al menos una letra y un signo
+    if (
+      !/^.*(?=.{6,})(?=.*[A-Za-z])(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).*$/.test(
+        adminClave
+      )
+    ) {
+      setAdminError(
+        "La contraseña debe tener mínimo 6 caracteres, incluir una letra y un signo."
+      );
+      return;
+    }
+    setAdminLoading(true);
+    setAdminError("");
+    try {
+      await fetch(`${API_URL}?id=eq.${adminEditId}`, {
+        method: "PATCH",
+        headers: {
+          apikey: API_KEY,
+          Authorization: `Bearer ${API_KEY}`,
+          "Content-Type": "application/json",
+          Prefer: "return=representation",
+        },
+        body: JSON.stringify({ nombre: adminNombre, clave: adminClave }),
+      });
+      // Recargar datos
+      const res = await fetch(API_URL + "?select=*", {
+        headers: { apikey: API_KEY, Authorization: `Bearer ${API_KEY}` },
+      });
+      const nuevosUsuarios = await res.json();
+      setUsuarios(nuevosUsuarios);
+      handleAdminModalClose();
+    } catch {
+      setAdminError("Error al guardar cambios");
+    }
+    setAdminLoading(false);
+  };
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [form, setForm] = useState<Partial<Usuario>>({});
   const [showModal, setShowModal] = useState(false);
   // Lista de cajas sugeridas (puedes modificar o cargar dinámicamente)
-  const cajasDisponibles = [
-    "LOCAL1",
-    "LOCAL2",
-    "caja1",
-    "caja2",
-    "caja3",
-    "caja4",
-    "caja5"
-  ];
+  const cajasDisponibles = ["caja1", "caja2", "caja3", "caja4", "caja5"];
   const [editId, setEditId] = useState<string | null>(null);
 
   const API_URL = "https://zyziaizfmfvtibhpqwda.supabase.co/rest/v1/usuarios";
@@ -57,7 +112,7 @@ export default function UsuariosView({ onBack }: UsuariosViewProps) {
 
   // ✅ CORREGIDO: Cálculos de límites (DESPUÉS de hooks)
   const totalUsuarios = usuarios.length;
-  const adminCount = usuarios.filter((u) => u.rol === "admin").length;
+  const adminCount = usuarios.filter((u) => u.rol === "Admin").length;
   const cajeroCount = usuarios.filter((u) => u.rol === "cajero").length;
 
   const limiteTotal = totalUsuarios >= 6;
@@ -80,15 +135,25 @@ export default function UsuariosView({ onBack }: UsuariosViewProps) {
       setError(errorLimite);
       return;
     }
-    // Validación de contraseña: mínimo 6 dígitos numéricos
+    // Validación de contraseña: mínimo 6 caracteres, al menos una letra y un signo
     const clave = form.clave || "";
-    if (!/^[0-9]{6,}$/.test(clave)) {
-      setError("La contraseña debe tener mínimo 6 dígitos numéricos.");
+    if (
+      !/^.*(?=.{6,})(?=.*[A-Za-z])(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).*$/.test(
+        clave
+      )
+    ) {
+      setError(
+        "La contraseña debe tener mínimo 6 caracteres, incluir una letra y un signo."
+      );
       return;
     }
     setLoading(true);
     setError("");
     try {
+      // Forzar el valor del rol a 'cajero' o 'admin' según el select
+      const rolVal =
+        form.rol === "cajero" || form.rol === "admin" ? form.rol : "cajero";
+      const formToSend = { ...form, rol: rolVal };
       if (editId) {
         await fetch(`${API_URL}?id=eq.${editId}`, {
           method: "PATCH",
@@ -98,7 +163,7 @@ export default function UsuariosView({ onBack }: UsuariosViewProps) {
             "Content-Type": "application/json",
             Prefer: "return=representation",
           },
-          body: JSON.stringify(form),
+          body: JSON.stringify(formToSend),
         });
       } else {
         await fetch(API_URL, {
@@ -109,7 +174,7 @@ export default function UsuariosView({ onBack }: UsuariosViewProps) {
             "Content-Type": "application/json",
             Prefer: "return=representation",
           },
-          body: JSON.stringify(form),
+          body: JSON.stringify(formToSend),
         });
       }
       setForm({});
@@ -126,6 +191,11 @@ export default function UsuariosView({ onBack }: UsuariosViewProps) {
   };
 
   const handleDelete = async (id: string) => {
+    const usuario = usuarios.find((u) => u.id === id);
+    if (usuario?.rol === "admin") {
+      setError("No se puede eliminar el usuario administrador.");
+      return;
+    }
     if (!window.confirm("¿Eliminar usuario permanentemente?")) return;
     setLoading(true);
     try {
@@ -149,7 +219,15 @@ export default function UsuariosView({ onBack }: UsuariosViewProps) {
 
   const handleEdit = (usuario: Usuario) => {
     setEditId(usuario.id);
-    setForm(usuario);
+    setForm({
+      nombre: usuario.nombre || "",
+      codigo: usuario.codigo || "",
+      clave: "", // Nunca mostrar la clave anterior
+      rol: usuario.rol || "cajero",
+      caja: usuario.caja || "",
+      ip: usuario.ip || "",
+    });
+    setShowModal(true);
   };
 
   // const handleNew = () => {}; // Eliminado para evitar error TS6133
@@ -442,10 +520,7 @@ export default function UsuariosView({ onBack }: UsuariosViewProps) {
             <div className="stat-value">{adminCount}</div>
             <div className="stat-label">Administradores</div>
           </div>
-          <div className="stat-card">
-            {/* Eliminado subAdminCount, ya no existe sub-admin */}
-            <div className="stat-label">Sub-Administradores</div>
-          </div>
+
           <div className="stat-card">
             <div className="stat-value">{cajeroCount}</div>
             <div className="stat-label">Cajeros</div>
@@ -477,8 +552,12 @@ export default function UsuariosView({ onBack }: UsuariosViewProps) {
               <tbody>
                 {usuarios.map((u) => (
                   <tr key={u.id}>
-                    <td style={{ color: '#43a047', fontWeight: 700 }}>{u.id}</td>
-                    <td><strong>{u.nombre}</strong></td>
+                    <td style={{ color: "#43a047", fontWeight: 700 }}>
+                      {u.id}
+                    </td>
+                    <td>
+                      <strong>{u.nombre}</strong>
+                    </td>
                     <td>{u.codigo}</td>
                     <td
                       style={{
@@ -492,21 +571,40 @@ export default function UsuariosView({ onBack }: UsuariosViewProps) {
                     >
                       {u.rol}
                     </td>
-                    <td style={{ color: '#43a047', fontWeight: 700 }}>{u.caja || '-'}</td>
+                    <td style={{ color: "#43a047", fontWeight: 700 }}>
+                      {u.caja || "-"}
+                    </td>
                     <td>{u.ip || "-"}</td>
                     <td>
-                      <button
-                        className="btn-table btn-edit"
-                        onClick={() => handleEdit(u)}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        className="btn-table btn-delete"
-                        onClick={() => handleDelete(u.id)}
-                      >
-                        Eliminar
-                      </button>
+                      {u.rol !== "Admin" && (
+                        <button
+                          className="btn-table btn-edit"
+                          onClick={() => handleEdit(u)}
+                        >
+                          Editar
+                        </button>
+                      )}
+                      {u.rol === "Admin" && (
+                        <button
+                          className="btn-table btn-update"
+                          onClick={() => handleAdminUpdate(u)}
+                          style={{
+                            background: "#1976d2",
+                            color: "#fff",
+                            marginLeft: 8,
+                          }}
+                        >
+                          Actualizar
+                        </button>
+                      )}
+                      {u.rol !== "Admin" && (
+                        <button
+                          className="btn-table btn-delete"
+                          onClick={() => handleDelete(u.id)}
+                        >
+                          Eliminar
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -516,74 +614,95 @@ export default function UsuariosView({ onBack }: UsuariosViewProps) {
         )}
 
         {/* Botón para abrir modal de nuevo usuario */}
-        <div style={{ textAlign: 'center', margin: '2rem 0' }}>
+        <div style={{ textAlign: "center", margin: "2rem 0" }}>
           <button
             style={{
-              background: '#1976d2',
-              color: '#fff',
-              border: 'none',
+              background: "#1976d2",
+              color: "#fff",
+              border: "none",
               borderRadius: 8,
-              padding: '12px 32px',
+              padding: "12px 32px",
               fontWeight: 700,
               fontSize: 18,
-              cursor: 'pointer',
-              boxShadow: '0 2px 8px #1976d222',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8
+              cursor: "pointer",
+              boxShadow: "0 2px 8px #1976d222",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
             }}
             onClick={() => {
               setEditId(null);
-              setForm({});
-              setShowModal(true);
+              setForm({
+                nombre: "",
+                codigo: "",
+                clave: "",
+                rol: "cajero",
+                caja: "",
+                ip: "",
+              });
+              setTimeout(() => setShowModal(true), 0);
             }}
           >
-            <span role="img" aria-label="nuevo usuario">👤</span> Nuevo Usuario
+            <span role="img" aria-label="nuevo usuario">
+              👤
+            </span>{" "}
+            Nuevo Usuario
           </button>
         </div>
 
         {/* Modal para crear/editar usuario */}
+        <AdminEditModal
+          open={showAdminModal}
+          nombre={adminNombre}
+          clave={adminClave}
+          loading={adminLoading}
+          error={adminError}
+          onClose={handleAdminModalClose}
+          onChangeNombre={setAdminNombre}
+          onChangeClave={setAdminClave}
+          onSubmit={handleAdminModalSubmit}
+        />
         {showModal && (
           <div
             style={{
-              position: 'fixed',
+              position: "fixed",
               top: 0,
               left: 0,
-              width: '100vw',
-              height: '100vh',
-              background: 'rgba(0,0,0,0.25)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 9999
+              width: "100vw",
+              height: "100vh",
+              background: "rgba(0,0,0,0.25)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999,
             }}
             onClick={() => setShowModal(false)}
           >
             <div
               style={{
-                background: '#222',
+                background: "#222",
                 borderRadius: 16,
                 padding: 32,
                 minWidth: 320,
                 maxWidth: 400,
-                width: '100%',
-                boxShadow: '0 8px 32px #0008',
-                position: 'relative',
-                color: '#fff',
+                width: "100%",
+                boxShadow: "0 8px 32px #0008",
+                position: "relative",
+                color: "#fff",
               }}
-              onClick={e => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={() => setShowModal(false)}
                 style={{
-                  position: 'absolute',
+                  position: "absolute",
                   top: 12,
                   right: 12,
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#fff',
+                  background: "transparent",
+                  border: "none",
+                  color: "#fff",
                   fontSize: 24,
-                  cursor: 'pointer',
+                  cursor: "pointer",
                 }}
                 aria-label="Cerrar"
               >
@@ -602,7 +721,7 @@ export default function UsuariosView({ onBack }: UsuariosViewProps) {
                     setForm((f) => ({ ...f, nombre: e.target.value }))
                   }
                   required
-                  style={{ color: '#43a047', fontWeight: 700 }}
+                  style={{ color: "#43a047", fontWeight: 700 }}
                 />
                 <input
                   className="form-input"
@@ -613,67 +732,81 @@ export default function UsuariosView({ onBack }: UsuariosViewProps) {
                     setForm((f) => ({ ...f, codigo: e.target.value }))
                   }
                   required
-                  style={{ color: '#43a047', fontWeight: 700 }}
+                  style={{ color: "#43a047", fontWeight: 700 }}
                 />
-            <input
-              className="form-input"
-              type="password"
-              placeholder="Contraseña"
-              value={form.clave || ""}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, clave: e.target.value }))
-              }
-              required
-              style={{ color: '#43a047', fontWeight: 700 }}
-            />
-            <select
-              className="form-input"
-              value={form.rol || "cajero"}
-              onChange={(e) => setForm((f) => ({ ...f, rol: e.target.value }))}
-              style={{ color: '#43a047', fontWeight: 700 }}
-            >
-              {/* Solo mostrar cajero si hay menos de 5 cajeros */}
-              {cajeroCount < 5 && <option value="cajero">Cajero</option>}
-              {/* Solo mostrar admin si no existe uno */}
-              {adminCount === 0 && <option value="admin">Administrador</option>}
-            </select>
-            <select
-              className="form-input"
-              value={form.caja || ""}
-              onChange={e => setForm(f => ({ ...f, caja: e.target.value }))}
-              required
-              style={{ color: '#43a047', fontWeight: 700 }}
-            >
-              <option value="">Selecciona caja</option>
-              {cajasDisponibles.map(caja => (
-                <option key={caja} value={caja}>{caja}</option>
-              ))}
-            </select>
-            <input
-              className="form-input"
-              type="text"
-              placeholder="IP (opcional)"
-              value={form.ip || ""}
-              onChange={(e) => setForm((f) => ({ ...f, ip: e.target.value }))}
-            />
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={loading || limiteTotal || limitePorRol}
-              style={{ gridColumn: "1/-1", justifySelf: "start" }}
-            >
-              {loading
-                ? "⏳ Guardando..."
-                : editId
-                ? "💾 Guardar Cambios"
-                : "✅ Crear Usuario"}
-            </button>
-          </form>
-        </div>
-        {/* Fin del modal */}
-        </div>
-      )}
-    </main>
+                <input
+                  className="form-input"
+                  type="password"
+                  placeholder="Contraseña"
+                  value={form.clave || ""}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, clave: e.target.value }))
+                  }
+                  required
+                  style={{ color: "#43a047", fontWeight: 700 }}
+                />
+                <select
+                  className="form-input"
+                  value="cajero"
+                  disabled
+                  style={{ color: "#43a047", fontWeight: 700 }}
+                >
+                  <option value="cajero">Cajero</option>
+                </select>
+                <select
+                  className="form-input"
+                  value={form.caja || ""}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, caja: e.target.value }))
+                  }
+                  required
+                  style={{ color: "#43a047", fontWeight: 700 }}
+                >
+                  <option value="">Selecciona caja</option>
+                  {cajasDisponibles
+                    .filter((caja) => {
+                      // Permitir la caja si no está ocupada o si es la que tiene el usuario editado
+                      const ocupada = usuarios.some(
+                        (u) => u.caja === caja && (!editId || u.id !== editId)
+                      );
+                      return !ocupada || (editId && form.caja === caja);
+                    })
+                    .map((caja) => (
+                      <option key={caja} value={caja}>
+                        {caja}
+                      </option>
+                    ))}
+                </select>
+                {/* <input
+                  className="form-input"
+                  type="text"
+                  placeholder="IP (opcional)"
+                  value={form.ip || ""}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, ip: e.target.value }))
+                  }
+                /> */}
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={loading || limiteTotal || limitePorRol}
+                  style={{ gridColumn: "1/-1", justifySelf: "start" }}
+                >
+                  {loading
+                    ? "⏳ Guardando..."
+                    : editId
+                    ? "💾 Guardar Cambios"
+                    : "✅ Crear Usuario"}
+                </button>
+              </form>
+            </div>
+            {/* Fin del modal */}
+          </div>
+        )}
+      </main>
     </div>
   );
+}
+function setUsuarios(nuevosUsuarios: any) {
+  throw new Error("Function not implemented.");
 }

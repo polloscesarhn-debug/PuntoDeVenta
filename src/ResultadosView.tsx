@@ -1,10 +1,21 @@
-import { useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, LineChart, Line, CartesianGrid } from 'recharts';
+import { useEffect, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  CartesianGrid,
+} from "recharts";
 
 const supabase = createClient(
-  'https://zyziaizfmfvtibhpqwda.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5emlhaXpmbWZ2dGliaHBxd2RhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNjU1MzcsImV4cCI6MjA3NTk0MTUzN30.cLiAwO8kw23reAYLXOQ4AO1xgrTDI_vhXkJCJHGWXLY'
+  "https://zyziaizfmfvtibhpqwda.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5emlhaXpmbWZ2dGliaHBxd2RhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNjU1MzcsImV4cCI6MjA3NTk0MTUzN30.cLiAwO8kw23reAYLXOQ4AO1xgrTDI_vhXkJCJHGWXLY"
 );
 
 interface ResultadosViewProps {
@@ -12,18 +23,22 @@ interface ResultadosViewProps {
   onVerFacturasEmitidas?: () => void;
 }
 
-export default function ResultadosView({ onBack, onVerFacturasEmitidas }: ResultadosViewProps) {
-  const [desde, setDesde] = useState('');
-  const [hasta, setHasta] = useState('');
+export default function ResultadosView({
+  onBack,
+  onVerFacturasEmitidas,
+}: ResultadosViewProps) {
+  const [desde, setDesde] = useState("");
+  const [hasta, setHasta] = useState("");
   const [facturas, setFacturas] = useState<any[]>([]);
   const [gastos, setGastos] = useState<any[]>([]);
   const [ventasMensuales, setVentasMensuales] = useState<any[]>([]);
   const [balance, setBalance] = useState(0);
-  const [mesFiltro, setMesFiltro] = useState('');
+  const [ventasPorDia, setVentasPorDia] = useState<any[]>([]);
+  const [mesFiltro, setMesFiltro] = useState("");
   // Obtener usuario actual de localStorage
   const usuarioActual = (() => {
     try {
-      const stored = localStorage.getItem('usuario');
+      const stored = localStorage.getItem("usuario");
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
@@ -35,71 +50,151 @@ export default function ResultadosView({ onBack, onVerFacturasEmitidas }: Result
   }, [desde, hasta]);
 
   // Si el usuario no es admin, mostrar mensaje y bloquear acceso
-  if (!usuarioActual || (usuarioActual.rol !== 'admin' && usuarioActual.rol !== 'Admin')) {
+  if (
+    !usuarioActual ||
+    (usuarioActual.rol !== "admin" && usuarioActual.rol !== "Admin")
+  ) {
     return (
-      <div style={{ width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1a1a2e', color: '#fff', fontSize: 24, fontWeight: 700 }}>
-        Acceso restringido: solo administradores pueden ver el dashboard financiero.
+      <div
+        style={{
+          width: "100vw",
+          height: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#1a1a2e",
+          color: "#fff",
+          fontSize: 24,
+          fontWeight: 700,
+        }}
+      >
+        Acceso restringido: solo administradores pueden ver el dashboard
+        financiero.
       </div>
     );
   }
 
   async function fetchDatos() {
     try {
-      let factQuery = supabase.from('facturas').select('*').order('fecha_hora', { ascending: false });
-      let gastQuery = supabase.from('gastos').select('*').order('fecha', { ascending: false });
-      
+      let factQuery = supabase
+        .from("facturas")
+        .select("*")
+        .order("fecha_hora", { ascending: false });
+      let gastQuery = supabase
+        .from("gastos")
+        .select("*")
+        .order("fecha", { ascending: false });
+
       if (desde && hasta) {
-        factQuery = supabase.from('facturas').select('*').gte('fecha_hora', desde).lte('fecha_hora', hasta).order('fecha_hora', { ascending: false });
-        gastQuery = supabase.from('gastos').select('*').gte('fecha', desde).lte('fecha', hasta).order('fecha', { ascending: false });
+        factQuery = supabase
+          .from("facturas")
+          .select("*")
+          .gte("fecha_hora", desde)
+          .lte("fecha_hora", hasta)
+          .order("fecha_hora", { ascending: false });
+        gastQuery = supabase
+          .from("gastos")
+          .select("*")
+          .gte("fecha", desde)
+          .lte("fecha", hasta)
+          .order("fecha", { ascending: false });
       }
-      
-      const [{ data: factData }, { data: gastData }] = await Promise.all([factQuery, gastQuery]);
+
+      const [{ data: factData }, { data: gastData }] = await Promise.all([
+        factQuery,
+        gastQuery,
+      ]);
       setFacturas(factData || []);
       setGastos(gastData || []);
       calcularMensual(factData || [], gastData || []);
+      calcularPorDia(factData || []);
+      function calcularPorDia(facturas: any[]) {
+        // Agrupar ventas por día
+        const ventasAgrupadas: { [fecha: string]: number } = {};
+        facturas.forEach((fact) => {
+          const fecha = fact.fecha_hora.split("T")[0];
+          ventasAgrupadas[fecha] =
+            (ventasAgrupadas[fecha] || 0) + (fact.total || 0);
+        });
+        // Convertir a array para la gráfica
+        const ventasArray = Object.entries(ventasAgrupadas).map(
+          ([fecha, total]) => ({ fecha, total })
+        );
+        setVentasPorDia(ventasArray);
+      }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error("Error fetching data:", error);
     }
   }
 
   function calcularMensual(facturas: any[], gastos: any[]) {
     const ventasPorMes: { [mes: string]: number } = {};
-    facturas.forEach(f => {
+    facturas.forEach((f) => {
       const mes = f.fecha_hora?.slice(0, 7);
       ventasPorMes[mes] = (ventasPorMes[mes] || 0) + parseFloat(f.total || 0);
     });
-    
+
     const gastosPorMes: { [mes: string]: number } = {};
-    gastos.forEach(g => {
+    gastos.forEach((g) => {
       const mes = g.fecha?.slice(0, 7);
       gastosPorMes[mes] = (gastosPorMes[mes] || 0) + parseFloat(g.monto || 0);
     });
-    
-    const meses = Array.from(new Set([...Object.keys(ventasPorMes), ...Object.keys(gastosPorMes)])).sort();
-    const resumen = meses.map(mes => ({
+
+    const meses = Array.from(
+      new Set([...Object.keys(ventasPorMes), ...Object.keys(gastosPorMes)])
+    ).sort();
+    const resumen = meses.map((mes) => ({
       mes,
       ventas: ventasPorMes[mes] || 0,
       gastos: gastosPorMes[mes] || 0,
       balance: (ventasPorMes[mes] || 0) - (gastosPorMes[mes] || 0),
     }));
-    
+
     setVentasMensuales(resumen);
-    const totalVentas = facturas.reduce((sum, f) => sum + parseFloat(f.total || 0), 0);
-    const totalGastos = gastos.reduce((sum, g) => sum + parseFloat(g.monto || 0), 0);
+    const totalVentas = facturas.reduce(
+      (sum, f) => sum + parseFloat(f.total || 0),
+      0
+    );
+    const totalGastos = gastos.reduce(
+      (sum, g) => sum + parseFloat(g.monto || 0),
+      0
+    );
     setBalance(totalVentas - totalGastos);
   }
 
-  const mesesDisponibles = ventasMensuales.map(r => r.mes);
-  const facturasFiltradas = mesFiltro ? facturas.filter(f => f.fecha_hora?.slice(0, 7) === mesFiltro) : facturas;
-  const gastosFiltrados = mesFiltro ? gastos.filter(g => g.fecha?.slice(0, 7) === mesFiltro) : gastos;
+  const mesesDisponibles = ventasMensuales.map((r) => r.mes);
+  const facturasFiltradas = mesFiltro
+    ? facturas.filter((f) => f.fecha_hora?.slice(0, 7) === mesFiltro)
+    : facturas;
+  const gastosFiltrados = mesFiltro
+    ? gastos.filter((g) => g.fecha?.slice(0, 7) === mesFiltro)
+    : gastos;
 
-  const totalVentas = facturas.reduce((sum, f) => sum + parseFloat(f.total || 0), 0);
-  const totalGastos = gastos.reduce((sum, g) => sum + parseFloat(g.monto || 0), 0);
+  const totalVentas = facturas.reduce(
+    (sum, f) => sum + parseFloat(f.total || 0),
+    0
+  );
+  const totalGastos = gastos.reduce(
+    (sum, g) => sum + parseFloat(g.monto || 0),
+    0
+  );
   const facturasCount = facturas.length;
   const gastosCount = gastos.length;
 
   return (
-    <div className="resultados-enterprise" style={{ width: '100vw', height: '100vh', minHeight: '100vh', minWidth: '100vw', margin: 0, padding: 0, boxSizing: 'border-box', overflow: 'auto' }}>
+    <div
+      className="resultados-enterprise"
+      style={{
+        width: "100vw",
+        height: "100vh",
+        minHeight: "100vh",
+        minWidth: "100vw",
+        margin: 0,
+        padding: 0,
+        boxSizing: "border-box",
+        overflow: "auto",
+      }}
+    >
       <style>{`
         body, #root {
           width: 100vw !important;
@@ -389,32 +484,34 @@ export default function ResultadosView({ onBack, onVerFacturasEmitidas }: Result
         <div className="filters">
           <div className="filter-group">
             <label>📅 Desde:</label>
-            <input 
-              type="date" 
-              value={desde} 
-              onChange={e => setDesde(e.target.value)} 
+            <input
+              type="date"
+              value={desde}
+              onChange={(e) => setDesde(e.target.value)}
               className="filter-input"
             />
           </div>
           <div className="filter-group">
             <label>hasta:</label>
-            <input 
-              type="date" 
-              value={hasta} 
-              onChange={e => setHasta(e.target.value)} 
+            <input
+              type="date"
+              value={hasta}
+              onChange={(e) => setHasta(e.target.value)}
               className="filter-input"
             />
           </div>
           <div className="filter-group">
             <label>📊 Mes:</label>
-            <select 
-              value={mesFiltro} 
-              onChange={e => setMesFiltro(e.target.value)} 
+            <select
+              value={mesFiltro}
+              onChange={(e) => setMesFiltro(e.target.value)}
               className="filter-select"
             >
               <option value="">Todos</option>
-              {mesesDisponibles.map(mes => (
-                <option key={mes} value={mes}>{mes}</option>
+              {mesesDisponibles.map((mes) => (
+                <option key={mes} value={mes}>
+                  {mes}
+                </option>
               ))}
             </select>
           </div>
@@ -426,16 +523,30 @@ export default function ResultadosView({ onBack, onVerFacturasEmitidas }: Result
         {/* KPIs */}
         <div className="kpi-grid">
           <div className="kpi-card kpi-success">
-            <div className="kpi-value">L {totalVentas.toLocaleString('de-DE', { minimumFractionDigits: 2 })}</div>
+            <div className="kpi-value">
+              L{" "}
+              {totalVentas.toLocaleString("de-DE", {
+                minimumFractionDigits: 2,
+              })}
+            </div>
             <div className="kpi-label">Total Ventas</div>
           </div>
           <div className="kpi-card kpi-danger">
-            <div className="kpi-value">L {totalGastos.toLocaleString('de-DE', { minimumFractionDigits: 2 })}</div>
+            <div className="kpi-value">
+              L{" "}
+              {totalGastos.toLocaleString("de-DE", {
+                minimumFractionDigits: 2,
+              })}
+            </div>
             <div className="kpi-label">Total Gastos</div>
           </div>
           <div className="kpi-card kpi-info">
-            <div className="kpi-value">L {balance.toLocaleString('de-DE', { minimumFractionDigits: 2 })}</div>
-            <div className="kpi-label">{balance >= 0 ? '✅ Ganancia' : '❌ Pérdida'}</div>
+            <div className="kpi-value">
+              L {balance.toLocaleString("de-DE", { minimumFractionDigits: 2 })}
+            </div>
+            <div className="kpi-label">
+              {balance >= 0 ? "✅ Ganancia" : "❌ Pérdida"}
+            </div>
           </div>
           <div className="kpi-card kpi-success">
             <div className="kpi-value">{facturasCount}</div>
@@ -454,12 +565,15 @@ export default function ResultadosView({ onBack, onVerFacturasEmitidas }: Result
               <div className="table-header">
                 <h3 className="table-title">📋 Facturas Recientes</h3>
                 {onVerFacturasEmitidas && (
-                  <button className="btn-secondary" onClick={onVerFacturasEmitidas}>
+                  <button
+                    className="btn-secondary"
+                    onClick={onVerFacturasEmitidas}
+                  >
                     Ver todas
                   </button>
                 )}
               </div>
-              <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              <div style={{ maxHeight: "400px", overflowY: "auto" }}>
                 <table className="table">
                   <thead>
                     <tr>
@@ -471,13 +585,15 @@ export default function ResultadosView({ onBack, onVerFacturasEmitidas }: Result
                     </tr>
                   </thead>
                   <tbody>
-                    {facturasFiltradas.slice(0, 10).map(f => (
+                    {facturasFiltradas.slice(0, 10).map((f) => (
                       <tr key={f.id}>
                         <td>{f.fecha_hora?.slice(0, 10)}</td>
                         <td>{f.cajero}</td>
                         <td>{f.factura}</td>
                         <td>{f.cliente}</td>
-                        <td style={{ color: 'var(--success)' }}>L {parseFloat(f.total || 0).toFixed(2)}</td>
+                        <td style={{ color: "var(--success)" }}>
+                          L {parseFloat(f.total || 0).toFixed(2)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -491,7 +607,7 @@ export default function ResultadosView({ onBack, onVerFacturasEmitidas }: Result
               <div className="table-header">
                 <h3 className="table-title">💸 Gastos</h3>
               </div>
-              <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              <div style={{ maxHeight: "400px", overflowY: "auto" }}>
                 <table className="table">
                   <thead>
                     <tr>
@@ -501,10 +617,12 @@ export default function ResultadosView({ onBack, onVerFacturasEmitidas }: Result
                     </tr>
                   </thead>
                   <tbody>
-                    {gastosFiltrados.slice(0, 10).map(g => (
+                    {gastosFiltrados.slice(0, 10).map((g) => (
                       <tr key={g.id}>
                         <td>{g.fecha}</td>
-                        <td style={{ color: 'var(--danger)' }}>L {parseFloat(g.monto || 0).toFixed(2)}</td>
+                        <td style={{ color: "var(--danger)" }}>
+                          L {parseFloat(g.monto || 0).toFixed(2)}
+                        </td>
                         <td>{g.motivo}</td>
                       </tr>
                     ))}
@@ -521,28 +639,50 @@ export default function ResultadosView({ onBack, onVerFacturasEmitidas }: Result
           <div className="charts-grid">
             <div>
               <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={ventasMensuales} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={'var(--border)'} />
-                  <XAxis dataKey="mes" stroke={'var(--text-secondary)'} />
-                  <YAxis stroke={'var(--text-secondary)'} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      background: 'rgba(26,26,46,0.95)', 
-                      border: '1px solid var(--border)',
-                      color: 'var(--text-primary)'
-                    }} 
+                <BarChart
+                  data={ventasMensuales}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={"var(--border)"}
+                  />
+                  <XAxis dataKey="mes" stroke={"var(--text-secondary)"} />
+                  <YAxis stroke={"var(--text-secondary)"} />
+                  <Tooltip
+                    contentStyle={{
+                      background: "rgba(26,26,46,0.95)",
+                      border: "1px solid var(--border)",
+                      color: "var(--text-primary)",
+                    }}
                   />
                   <Legend />
                   <Bar dataKey="ventas" fill="url(#ventas)" name="Ventas" />
                   <Bar dataKey="gastos" fill="url(#gastos)" name="Gastos" />
                   <defs>
                     <linearGradient id="ventas" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={'var(--success)'} stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor={'var(--success)'} stopOpacity={0.2}/>
+                      <stop
+                        offset="5%"
+                        stopColor={"var(--success)"}
+                        stopOpacity={0.8}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor={"var(--success)"}
+                        stopOpacity={0.2}
+                      />
                     </linearGradient>
                     <linearGradient id="gastos" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={'var(--danger)'} stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor={'var(--danger)'} stopOpacity={0.2}/>
+                      <stop
+                        offset="5%"
+                        stopColor={"var(--danger)"}
+                        stopOpacity={0.8}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor={"var(--danger)"}
+                        stopOpacity={0.2}
+                      />
                     </linearGradient>
                   </defs>
                 </BarChart>
@@ -550,29 +690,62 @@ export default function ResultadosView({ onBack, onVerFacturasEmitidas }: Result
             </div>
             <div>
               <ResponsiveContainer width="100%" height={350}>
-                <LineChart data={ventasMensuales} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={'var(--border)'} />
-                  <XAxis dataKey="mes" stroke={'var(--text-secondary)'} />
-                  <YAxis stroke={'var(--text-secondary)'} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      background: 'rgba(26,26,46,0.95)', 
-                      border: '1px solid var(--border)',
-                      color: 'var(--text-primary)'
-                    }} 
+                <LineChart
+                  data={ventasMensuales}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={"var(--border)"}
+                  />
+                  <XAxis dataKey="mes" stroke={"var(--text-secondary)"} />
+                  <YAxis stroke={"var(--text-secondary)"} />
+                  <Tooltip
+                    contentStyle={{
+                      background: "rgba(26,26,46,0.95)",
+                      border: "1px solid var(--border)",
+                      color: "var(--text-primary)",
+                    }}
                   />
                   <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey="balance" 
-                    stroke={balance >= 0 ? 'var(--success)' : 'var(--danger)'}
-                    strokeWidth={3} 
+                  <Line
+                    type="monotone"
+                    dataKey="balance"
+                    stroke={balance >= 0 ? "var(--success)" : "var(--danger)"}
+                    strokeWidth={3}
                     name="Balance Mensual"
-                    dot={{ fill: balance >= 0 ? 'var(--success)' : 'var(--danger)', r: 4 }}
+                    dot={{
+                      fill: balance >= 0 ? "var(--success)" : "var(--danger)",
+                      r: 4,
+                    }}
                   />
                 </LineChart>
               </ResponsiveContainer>
             </div>
+          </div>
+          {/* Gráfica de ventas por día */}
+          <h3 className="charts-title" style={{ marginTop: 32 }}>
+            🗓️ Ventas por Día
+          </h3>
+          <div style={{ width: "100%", maxWidth: 900, margin: "0 auto" }}>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart
+                data={ventasPorDia}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke={"var(--border)"} />
+                <XAxis dataKey="fecha" stroke={"var(--text-secondary)"} />
+                <YAxis stroke={"var(--text-secondary)"} />
+                <Tooltip
+                  contentStyle={{
+                    background: "rgba(26,26,46,0.95)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-primary)",
+                  }}
+                />
+                <Bar dataKey="total" fill="var(--success)" name="Ventas" />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </main>

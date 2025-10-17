@@ -21,7 +21,7 @@ export default function AperturaView({
     setError("");
     if (!caja || caja === "" || caja === null || caja === undefined) {
       setError(
-        'No se puede registrar apertura: el valor de "caja" es nulo o vacío. Contacte al administrador.'
+        'No tienes caja asiganda. Contacte al administrador.'
       );
       setLoading(false);
       return;
