@@ -132,6 +132,20 @@ async function tryImportQz(): Promise<QZ | null> {
   // @ts-ignore
   if ((globalThis as any).qz) return (globalThis as any).qz;
 
+  // Intentar cargar la versión local `src/qz-tray.js` primero (archivo subido por el usuario)
+  try {
+  // @ts-ignore - el archivo local `qz-tray` no tiene declaración de tipos
+  const local = await import('./qz-tray');
+    // El script globaliza `qz` normalmente, pero algunos bundlers exportan también
+    if (local && (local.default || local.qz)) {
+      return (local.default || local.qz) as QZ;
+    }
+    // Si el módulo no exporta, verificar globalThis.qz de nuevo
+    if ((globalThis as any).qz) return (globalThis as any).qz;
+  } catch (err) {
+    log('No se pudo importar ./qz-tray.js localmente:', err);
+  }
+
   // Intentar import dinámico del paquete `qz-tray` si está instalado
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires

@@ -223,18 +223,52 @@ export default function PuntoDeVentaView({
   useEffect(() => {
     let mounted = true;
     (async () => {
+      // Al iniciar, marcar desconocido mientras probamos
+      setQzActive(null);
       try {
         const { default: qz } = await import("./qz");
         if (!mounted) return;
-        // 1. Verificar si QZ está activo
+
+        // Intentar usar la API status() si existe
         let qzActivo = false;
-        if (qz && typeof qz.status === "function") {
-          const st = await qz.status();
-          qzActivo = !!(st && st.connected);
-        } else if (qz && typeof qz.websocket?.isActive === "function") {
-          qzActivo = await qz.websocket.isActive();
+        try {
+          if (qz && typeof qz.status === "function") {
+            const st = await qz.status();
+            qzActivo = !!(st && st.connected);
+          } else if (qz && typeof qz.websocket?.isActive === "function") {
+            qzActivo = !!(await qz.websocket.isActive());
+          } else if (qz && typeof qz.isAvailable === "function") {
+            // fallback: isAvailable indica disponibilidad, pero no conexión
+            qzActivo = !!qz.isAvailable();
+          } else if ((globalThis as any).qz) {
+            // si el script local globalizó qz, intentar isActive
+            const g = (globalThis as any).qz;
+            if (g && g.websocket && typeof g.websocket.isActive === 'function') {
+              qzActivo = !!(await g.websocket.isActive());
+            }
+          }
+        } catch (e) {
+          console.warn('Error comprobando status de QZ Tray:', e);
+          qzActivo = false;
         }
+
+        // Si no está activo, intentar conexión rápida (no bloquear demasiado)
+        if (!qzActivo && qz && typeof qz.connect === 'function') {
+          try {
+            await qz.connect();
+            // Si connect no lanzó, consideramos activo
+            qzActivo = true;
+            // desconectar para no alterar estado global
+            try { await qz.disconnect(); } catch {}
+          } catch (e) {
+            // no conectado
+            qzActivo = false;
+          }
+        }
+
+        if (!mounted) return;
         setQzActive(qzActivo);
+
         // 2. Buscar impresoras solo si QZ activo
         if (!qzActivo) {
           setPrinterConnected(null);
@@ -244,7 +278,9 @@ export default function PuntoDeVentaView({
         if (qz && qz.printers && typeof qz.printers.find === "function") {
           try {
             printers = await qz.printers.find();
-          } catch {}
+          } catch (e) {
+            console.warn('Error listando impresoras:', e);
+          }
         }
         setPrinterConnected(printers && printers.length > 0);
       } catch (err) {
@@ -295,6 +331,8 @@ export default function PuntoDeVentaView({
       return nuevos;
     });
   };
+
+  // función de prueba temporal eliminada
 
   // Remove product from selection
   const eliminarProducto = (id: string) => {
@@ -385,7 +423,7 @@ export default function PuntoDeVentaView({
               {qzActive === null
                 ? "QZ Tray: desconocido"
                 : qzActive === true
-                  ? "QZ Tray: activo"
+                  ? "qz"
                   : "QZ Tray: inactivo"}
             </span>
             <span style={{ fontSize: 12, color: printerConnected === true ? "#388e3c" : printerConnected === null ? "#999" : "#d32f2f", fontWeight: 700 }}>
@@ -396,6 +434,7 @@ export default function PuntoDeVentaView({
                   : "Impresora no conectada"}
             </span>
           </div>
+        {/* botón de prueba temporal eliminado */}
       </div>
       {/* Botón cerrar sesión, volver y interruptor de tema */}
       <div
