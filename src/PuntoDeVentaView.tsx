@@ -74,8 +74,10 @@ export default function PuntoDeVentaView({
     cai: string;
   } | null>(null);
   const online = navigator.onLine;
-  // null: desconocido, true: QZ activo y hay impresora, false: QZ inactivo, 'no-printer': QZ activo pero sin impresora
-  const [printerConnected, setPrinterConnected] = useState<boolean | 'no-printer' | null>(null);
+  // Estado QZ Tray: null = desconocido, true = activo, false = inactivo
+  const [qzActive, setQzActive] = useState<boolean | null>(null);
+  // Estado impresora: null = desconocido, true = conectada, false = no conectada
+  const [printerConnected, setPrinterConnected] = useState<boolean | null>(null);
 
   const [productos, setProductos] = useState<Producto[]>([]);
   const [seleccionados, setSeleccionados] = useState<Seleccion[]>([]);
@@ -232,24 +234,22 @@ export default function PuntoDeVentaView({
         } else if (qz && typeof qz.websocket?.isActive === "function") {
           qzActivo = await qz.websocket.isActive();
         }
+        setQzActive(qzActivo);
+        // 2. Buscar impresoras solo si QZ activo
         if (!qzActivo) {
-          setPrinterConnected(false);
+          setPrinterConnected(null);
           return;
         }
-        // 2. Si QZ activo, buscar impresoras
         let printers: string[] = [];
         if (qz && qz.printers && typeof qz.printers.find === "function") {
           try {
             printers = await qz.printers.find();
           } catch {}
         }
-        if (printers && printers.length > 0) {
-          setPrinterConnected(true);
-        } else {
-          setPrinterConnected('no-printer');
-        }
+        setPrinterConnected(printers && printers.length > 0);
       } catch (err) {
-        setPrinterConnected(false);
+        setQzActive(false);
+        setPrinterConnected(null);
       }
     })();
     // Re-evaluar cuando cambie el estado online (por si QZ se conecta en la misma máquina)
@@ -381,14 +381,19 @@ export default function PuntoDeVentaView({
         </span>
           {/* Indicador de impresora QZ Tray */}
           <div style={{ display: "flex", flexDirection: "column", marginLeft: 8 }}>
-            <span style={{ fontSize: 12, color: printerConnected === true ? "#388e3c" : printerConnected === 'no-printer' ? "#fbc02d" : (printerConnected === null ? "#999" : "#d32f2f"), fontWeight: 700 }}>
+            <span style={{ fontSize: 12, color: qzActive === true ? "#388e3c" : qzActive === null ? "#999" : "#d32f2f", fontWeight: 700 }}>
+              {qzActive === null
+                ? "QZ Tray: desconocido"
+                : qzActive === true
+                  ? "QZ Tray: activo"
+                  : "QZ Tray: inactivo"}
+            </span>
+            <span style={{ fontSize: 12, color: printerConnected === true ? "#388e3c" : printerConnected === null ? "#999" : "#d32f2f", fontWeight: 700 }}>
               {printerConnected === null
                 ? "Impresora: desconocida"
                 : printerConnected === true
-                  ? "QZ activo (Impresora conectada)"
-                  : printerConnected === 'no-printer'
-                    ? "QZ activo (Sin impresora)"
-                    : "QZ inactivo (Impresora no conectada)"}
+                  ? "Impresora conectada"
+                  : "Impresora no conectada"}
             </span>
           </div>
       </div>
