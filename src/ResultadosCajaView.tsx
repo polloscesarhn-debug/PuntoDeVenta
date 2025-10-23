@@ -214,6 +214,32 @@ export default function ResultadosCajaView() {
               >
                 DIFERENCIA
               </h3>
+              {/* Nuevo: tarjeta resumen por tipo para identificar dónde está la diferencia */}
+              {cierres.length > 0 && (
+                <div style={{ marginBottom: 12, display: 'flex', gap: 8, justifyContent: 'space-between' }}>
+                  {cierres.slice(0,1).map((cierre, i) => {
+                    const efectivoDiff = ((parseFloat(cierre.efectivo_registrado) || 0) - (parseFloat(cierre.efectivo_dia) || 0)).toFixed(2);
+                    const tarjetaDiff = ((parseFloat(cierre.monto_tarjeta_registrado) || 0) - (parseFloat(cierre.monto_tarjeta_dia) || 0)).toFixed(2);
+                    const transDiff = ((parseFloat(cierre.transferencias_registradas) || 0) - (parseFloat(cierre.transferencias_dia) || 0)).toFixed(2);
+                    return (
+                      <div key={i} style={{ display: 'flex', gap: 8, width: '100%', justifyContent: 'space-between' }}>
+                        <div style={{ flex: 1, background: '#fff', padding: 12, borderRadius: 10, textAlign: 'center', boxShadow: '0 2px 8px #00000010' }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: '#1976d2' }}>EFECTIVO</div>
+                          <div style={{ fontSize: 20, fontWeight: 900, color: efectivoDiff === '0.00' ? '#388e3c' : '#d32f2f' }}>L {efectivoDiff}</div>
+                        </div>
+                        <div style={{ flex: 1, background: '#fff', padding: 12, borderRadius: 10, textAlign: 'center', boxShadow: '0 2px 8px #00000010' }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: '#1976d2' }}>TARJETA</div>
+                          <div style={{ fontSize: 20, fontWeight: 900, color: tarjetaDiff === '0.00' ? '#388e3c' : '#d32f2f' }}>L {tarjetaDiff}</div>
+                        </div>
+                        <div style={{ flex: 1, background: '#fff', padding: 12, borderRadius: 10, textAlign: 'center', boxShadow: '0 2px 8px #00000010' }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: '#1976d2' }}>TRANSFERENCIA</div>
+                          <div style={{ fontSize: 20, fontWeight: 900, color: transDiff === '0.00' ? '#388e3c' : '#d32f2f' }}>L {transDiff}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
               {cierres.length > 0 &&
                 cierres
                   .filter((cierre) => {
