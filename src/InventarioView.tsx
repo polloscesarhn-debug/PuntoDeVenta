@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "./supabaseClient";
 
 interface Producto {
   id?: string;
@@ -17,13 +17,7 @@ interface InventarioViewProps {
   onBack: () => void;
 }
 
-const API_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5emlhaXpmbWZ2dGliaHBxd2RhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNjU1MzcsImV4cCI6MjA3NTk0MTUzN30.cLiAwO8kw23reAYLXOQ4AO1xgrTDI_vhXkJCJHGWXLY";
-
-const supabase = createClient(
-  "https://zyziaizfmfvtibhpqwda.supabase.co",
-  API_KEY
-);
+// use centralized supabase client from src/supabaseClient.ts
 
 function generarCodigo() {
   return Math.floor(100000 + Math.random() * 900000);

@@ -1,6 +1,6 @@
 // db.ts: Módulo para IndexedDB y sincronización con Supabase
 
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from './supabaseClient';
 
 const DB_NAME = 'pdv_offline_db';
 const DB_VERSION = 1;
@@ -41,11 +41,7 @@ export async function getFacturasOffline() {
   });
 }
 
-// Sincronización con Supabase
-const supabase = createClient(
-  'https://zyziaizfmfvtibhpqwda.supabase.co',
-  'public-anon-key'
-);
+// Sincronización con Supabase (usa la instancia central)
 
 export async function syncFacturasToSupabase() {
   const facturas = await getFacturasOffline();
