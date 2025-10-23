@@ -360,6 +360,36 @@ const AdminPanel: FC<AdminPanelProps> = ({ onSelect, user }) => {
         .card-header { gap: 12px; }
         .card-icon { width: 48px; height: 48px; font-size: 1.5rem; }
       }
+      /* Mejoras responsive para móviles y tablets */
+      @media (max-width: 1024px) {
+        .welcome-section { margin-bottom: 2rem; }
+        .logo img { width: 280px !important; height: auto !important; }
+      }
+
+      @media (max-width: 768px) {
+        .header { padding: 1rem; }
+        .header-content { flex-direction: column; gap: 12px; align-items: stretch; }
+        .logo { justify-content: center; }
+        .user-info { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 12px; }
+        .user-details { text-align: left; }
+        .cards-grid { grid-template-columns: 1fr; gap: 1rem; }
+        .card { padding: 1rem; }
+        .card-header { gap: 12px; }
+        .card-icon { width: 48px; height: 48px; font-size: 1.4rem; }
+        .card-content h3 { font-size: 1.05rem; }
+        .card-subtitle { font-size: 0.85rem; }
+        .card-footer { justify-content: center; }
+      }
+
+      @media (max-width: 420px) {
+        .header { padding: 0.75rem; }
+        .logo img { width: 200px !important; height: auto !important; }
+        .user-info { padding: 10px; gap: 6px; }
+        .user-avatar { width: 36px; height: 36px; font-size: 1rem; }
+        .btn-primary { font-size: 0.95rem; padding: 10px; }
+        .card { padding: 0.85rem; }
+        .card-icon { width: 44px; height: 44px; }
+      }
     `}</style>
 
       <header className="header">
