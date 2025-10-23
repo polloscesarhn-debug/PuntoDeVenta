@@ -169,13 +169,29 @@ export default function CierresAdminView({
     const transferenciasDia =
       pagosTrans?.reduce((sum, p) => sum + parseFloat(p.monto || 0), 0) || 0;
 
-    const fondoFijoRegistrado = 0;
-    const efectivoRegistrado = 0;
-    const montoTarjetaRegistrado = 0;
-    const transferenciasRegistradas = 0;
+    // Lo registrado: preferir valores ya guardados (ej. fondo de la apertura),
+    // para los demás montos no tenemos registro previo y asumimos 0.
+    const fondoFijoRegistrado = aperturas && aperturas.length > 0
+      ? parseFloat(aperturas[0].fondo_fijo_registrado)
+      : apertura.fondo_fijo_registrado
+      ? Number(apertura.fondo_fijo_registrado)
+      : 0;
+    const efectivoRegistrado = apertura.efectivo_registrado
+      ? Number(apertura.efectivo_registrado)
+      : 0;
+    const montoTarjetaRegistrado = apertura.monto_tarjeta_registrado
+      ? Number(apertura.monto_tarjeta_registrado)
+      : 0;
+    const transferenciasRegistradas = apertura.transferencias_registradas
+      ? Number(apertura.transferencias_registradas)
+      : 0;
 
+    // Diferencia = lo registrado - lo del día
     const diferencia =
-      efectivoDia + tarjetaDia + transferenciasDia + fondoFijoDia;
+      (fondoFijoRegistrado - fondoFijoDia) +
+      (efectivoRegistrado - efectivoDia) +
+      (montoTarjetaRegistrado - tarjetaDia) +
+      (transferenciasRegistradas - transferenciasDia);
     const observacion = diferencia === 0 ? "cuadrado" : "sin aclarar";
 
     setValoresCierre({
@@ -214,11 +230,33 @@ export default function CierresAdminView({
   });
   const cajasAbiertas = cajasAbiertasList.length;
 
-  const sumaDiferencia = cierres
-    .filter(
-      (c) => c.tipo_registro === "cierre" && c.observacion === "sin aclarar"
-    )
-    .reduce((sum, c) => sum + (Number(c.diferencia) || 0), 0);
+  // Recalcular diferencias como (lo registrado - lo del día) por cada cierre sin aclarar
+  const cierresSinAclarar = cierres.filter(
+    (c) => c.tipo_registro === "cierre" && c.observacion === "sin aclarar"
+  );
+
+  // Para cada cierre calculamos la diferencia por tipo usando los campos registrados y los del día
+  const diferenciaPorCierre = cierresSinAclarar.map((c) => {
+    const fondo_reg = Number(c.fondo_fijo_registrado || 0);
+    const fondo_dia = Number(c.fondo_fijo || 0);
+    const efectivo_reg = Number(c.efectivo_registrado || 0);
+    const efectivo_dia = Number(c.efectivo_dia || 0);
+    const tarjeta_reg = Number(c.monto_tarjeta_registrado || 0);
+    const tarjeta_dia = Number(c.monto_tarjeta_dia || 0);
+    const trans_reg = Number(c.transferencias_registradas || 0);
+    const trans_dia = Number(c.transferencias_dia || 0);
+    return {
+      total: (fondo_reg - fondo_dia) + (efectivo_reg - efectivo_dia) + (tarjeta_reg - tarjeta_dia) + (trans_reg - trans_dia),
+      efectivo: efectivo_reg - efectivo_dia,
+      tarjeta: tarjeta_reg - tarjeta_dia,
+      transferencias: trans_reg - trans_dia,
+    };
+  });
+
+  const sumaDiferencia = diferenciaPorCierre.reduce((sum, d) => sum + d.total, 0);
+  const sumaEfectivoSinAclarar = diferenciaPorCierre.reduce((sum, d) => sum + d.efectivo, 0);
+  const sumaTarjetaSinAclarar = diferenciaPorCierre.reduce((sum, d) => sum + d.tarjeta, 0);
+  const sumaTransferenciasSinAclarar = diferenciaPorCierre.reduce((sum, d) => sum + d.transferencias, 0);
 
   const handleCerrarCaja = async () => {
     if (!cajaCierre || !valoresCierre) return;
@@ -748,6 +786,23 @@ export default function CierresAdminView({
                 minimumFractionDigits: 2,
               })}
             </div>
+              {/* Desglose por tipo */}
+              <div style={{ marginTop: "0.75rem" }}>
+                <div className="valores-grid" style={{ gap: "0.5rem" }}>
+                  <div className="valor-item" style={{ padding: "0.5rem" }}>
+                    <div style={{ fontSize: "0.75rem", opacity: 0.9 }}>Efectivo</div>
+                    <div style={{ fontWeight: 700 }}>L {sumaEfectivoSinAclarar.toLocaleString("de-DE", { minimumFractionDigits: 2 })}</div>
+                  </div>
+                  <div className="valor-item" style={{ padding: "0.5rem" }}>
+                    <div style={{ fontSize: "0.75rem", opacity: 0.9 }}>Tarjeta</div>
+                    <div style={{ fontWeight: 700 }}>L {sumaTarjetaSinAclarar.toLocaleString("de-DE", { minimumFractionDigits: 2 })}</div>
+                  </div>
+                  <div className="valor-item" style={{ padding: "0.5rem" }}>
+                    <div style={{ fontSize: "0.75rem", opacity: 0.9 }}>Transferencias</div>
+                    <div style={{ fontWeight: 700 }}>L {sumaTransferenciasSinAclarar.toLocaleString("de-DE", { minimumFractionDigits: 2 })}</div>
+                  </div>
+                </div>
+              </div>
             <button className="clave-btn" onClick={handleOpenClaveModal}>
               🔑 Clave Aclaración
             </button>
