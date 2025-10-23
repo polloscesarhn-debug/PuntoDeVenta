@@ -24,8 +24,7 @@ export default function RegistroCierreView({
   const [transferencias, setTransferencias] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [drawerLoading, setDrawerLoading] = useState(false);
-  const [drawerMessage, setDrawerMessage] = useState<string | null>(null);
+  // Gaveta eliminada: ya no usamos drawerLoading/drawerMessage
   const [aperturaLoading, setAperturaLoading] = useState(false);
 
   // Precargar fondo fijo desde la APERTURA de hoy si existe
@@ -392,42 +391,6 @@ export default function RegistroCierreView({
         />
         <div style={{ display: 'flex', gap: 12, marginTop: 10, alignItems: 'center' }}>
           <button
-            type="button"
-            onClick={async () => {
-              try {
-                setDrawerLoading(true);
-                setDrawerMessage(null);
-                const { default: qz } = await import("./qz");
-                if (!qz || typeof qz.openCashDrawer !== 'function') {
-                  throw new Error('QZ Tray no disponible');
-                }
-                await qz.openCashDrawer();
-                setDrawerMessage('Gaveta abierta');
-              } catch (err: any) {
-                console.error('Error abriendo gaveta:', err);
-                setDrawerMessage('Error al abrir gaveta');
-              } finally {
-                setDrawerLoading(false);
-                setTimeout(() => setDrawerMessage(null), 3000);
-              }
-            }}
-            disabled={drawerLoading}
-            style={{
-              background: drawerLoading ? '#bdbdbd' : '#fbc02d',
-              color: '#333',
-              borderRadius: 8,
-              border: 'none',
-              padding: '12px 16px',
-              fontWeight: 700,
-              fontSize: 16,
-              cursor: drawerLoading ? 'not-allowed' : 'pointer',
-              boxShadow: '0 2px 8px #fbc02d33',
-            }}
-          >
-            {drawerLoading ? 'Abriendo...' : 'Abrir gaveta'}
-          </button>
-
-          <button
             type="submit"
             disabled={loading || aperturaLoading}
             style={{
@@ -449,7 +412,7 @@ export default function RegistroCierreView({
         {aperturaLoading && (
           <div style={{ marginTop: 8, fontSize: 13, color: '#1976d2' }}>Cargando apertura...</div>
         )}
-        {drawerMessage && <div style={{ marginTop: 8, fontWeight: 700 }}>{drawerMessage}</div>}
+  {/* drawerMessage removido */}
         {error && <div style={{ color: "red", fontWeight: 600 }}>{error}</div>}
         {loading && (
           <div style={{ marginTop: 18, textAlign: "center" }}>
