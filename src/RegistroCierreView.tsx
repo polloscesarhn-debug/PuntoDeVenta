@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "./supabaseClient";
+import { getLocalDayRange } from "./utils/fechas";
 
 interface UsuarioActual {
   nombre: string;
@@ -25,60 +26,105 @@ export default function RegistroCierreView({
   const [error, setError] = useState("");
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [drawerMessage, setDrawerMessage] = useState<string | null>(null);
+  const [aperturaLoading, setAperturaLoading] = useState(false);
+
+  // Precargar fondo fijo desde la APERTURA de hoy si existe
+  useEffect(() => {
+    let mounted = true;
+    async function loadApertura() {
+      if (!usuarioActual || !usuarioActual.id || !caja) return;
+      setAperturaLoading(true);
+      try {
+        const { start, end } = getLocalDayRange();
+        const { data: aperturas, error } = await supabase
+          .from("cierres")
+          .select("fondo_fijo_registrado")
+          .eq("tipo_registro", "apertura")
+          .eq("cajero_id", usuarioActual.id)
+          .eq("caja", caja)
+          .gte("fecha", start)
+          .lte("fecha", end)
+          .order("fecha", { ascending: true });
+        if (!mounted) return;
+        if (error) {
+          console.warn("Error buscando apertura de hoy:", error);
+        } else if (aperturas && aperturas.length > 0) {
+          const val = aperturas[0].fondo_fijo_registrado;
+          if ((val !== undefined && val !== null) && fondoFijo === "") {
+            setFondoFijo(String(val));
+          }
+        }
+      } catch (err) {
+        console.error("Error cargando apertura de hoy:", err);
+      } finally {
+        if (mounted) setAperturaLoading(false);
+      }
+    }
+    loadApertura();
+    return () => {
+      mounted = false;
+    };
+  }, [usuarioActual?.id, caja]);
 
   // Calcular valores automáticos
   async function obtenerValoresAutomaticos() {
-    const hoy = new Date().toISOString().slice(0, 10);
+    const { start, end } = getLocalDayRange();
     // Fondo fijo del día (apertura)
     const { data: aperturas } = await supabase
       .from("cierres")
       .select("fondo_fijo_registrado")
       .eq("tipo_registro", "apertura")
-      .eq("cajero", usuarioActual?.nombre)
+      // mantener compatibilidad: priorizar cajero_id si existe, sino filtrar por nombre
+      .or(usuarioActual?.id ? `cajero_id.eq.${usuarioActual.id}` : `cajero.eq.${usuarioActual?.nombre}`)
       .eq("caja", caja)
-      .gte("fecha", hoy + "T00:00:00")
-      .lte("fecha", hoy + "T23:59:59");
+  .gte("fecha", start)
+  .lte("fecha", end);
     const fondoFijoDia =
       aperturas && aperturas.length > 0
         ? parseFloat(aperturas[0].fondo_fijo_registrado)
         : 0;
 
     // Sumas de pagos del día por tipo y cajero (nombre)
-    const desde = hoy + "T00:00:00";
-    const hasta = hoy + "T23:59:59";
+  const desde = start;
+  const hasta = end;
 
-    const { data: pagosEfectivo } = await supabase
-      .from("pagos")
-      .select("monto, fecha_hora")
-      .eq("tipo", "Efectivo")
-      .eq("cajero_id", usuarioActual?.id)
-      .gte("fecha_hora", desde)
-      .lte("fecha_hora", hasta);
+    // Construir filtro de cajero: preferir cajero_id, si no disponible usar nombre
+    const cajeroFilterIsId = !!usuarioActual?.id;
+
+    // Usar el mismo filtro que el modal Resumen de caja: por cajero (id o nombre) y rango de fecha.
+    const pagosBase = () =>
+      supabase.from("pagos").select("monto, fecha_hora").gte("fecha_hora", desde).lte("fecha_hora", hasta);
+
+    const pagosEfectivoQuery = cajeroFilterIsId
+      ? pagosBase().eq("tipo", "Efectivo").eq("cajero_id", usuarioActual.id)
+      : pagosBase().eq("tipo", "Efectivo").eq("cajero", usuarioActual?.nombre);
+
+    const { data: pagosEfectivo } = await pagosEfectivoQuery;
+    console.debug("pagosEfectivo count:", pagosEfectivo?.length, "sample:", pagosEfectivo?.slice(0,3));
     const efectivoDia = pagosEfectivo
-      ? pagosEfectivo.reduce((sum, p) => sum + parseFloat(p.monto), 0)
+      ? pagosEfectivo.reduce((sum, p) => sum + parseFloat(p.monto || 0), 0)
       : 0;
+    console.debug("efectivoDia computed:", efectivoDia);
 
-    const { data: pagosTarjeta } = await supabase
-      .from("pagos")
-      .select("monto, fecha_hora")
-      .eq("tipo", "Tarjeta")
-      .eq("cajero_id", usuarioActual?.id)
-      .gte("fecha_hora", desde)
-      .lte("fecha_hora", hasta);
+    const pagosTarjetaQuery = cajeroFilterIsId
+      ? pagosBase().eq("tipo", "Tarjeta").eq("cajero_id", usuarioActual.id)
+      : pagosBase().eq("tipo", "Tarjeta").eq("cajero", usuarioActual?.nombre);
+    const { data: pagosTarjeta } = await pagosTarjetaQuery;
+    console.debug("pagosTarjeta count:", pagosTarjeta?.length, "sample:", pagosTarjeta?.slice(0,3));
     const tarjetaDia = pagosTarjeta
-      ? pagosTarjeta.reduce((sum, p) => sum + parseFloat(p.monto), 0)
+      ? pagosTarjeta.reduce((sum, p) => sum + parseFloat(p.monto || 0), 0)
       : 0;
+    console.debug("tarjetaDia computed:", tarjetaDia);
 
-    const { data: pagosTrans } = await supabase
-      .from("pagos")
-      .select("monto, fecha_hora")
-      .eq("tipo", "Transferencia")
-      .eq("cajero_id", usuarioActual?.id)
-      .gte("fecha_hora", desde)
-      .lte("fecha_hora", hasta);
+    const pagosTransQuery = cajeroFilterIsId
+      ? pagosBase().eq("tipo", "Transferencia").eq("cajero_id", usuarioActual.id)
+      : pagosBase().eq("tipo", "Transferencia").eq("cajero", usuarioActual?.nombre);
+    const { data: pagosTrans } = await pagosTransQuery;
+    console.debug("pagosTrans count:", pagosTrans?.length, "sample:", pagosTrans?.slice(0,3));
     const transferenciasDia = pagosTrans
-      ? pagosTrans.reduce((sum, p) => sum + parseFloat(p.monto), 0)
+      ? pagosTrans.reduce((sum, p) => sum + parseFloat(p.monto || 0), 0)
       : 0;
+    console.debug("transferenciasDia computed:", transferenciasDia);
 
     return { fondoFijoDia, efectivoDia, tarjetaDia, transferenciasDia };
   }
@@ -87,7 +133,7 @@ export default function RegistroCierreView({
     e.preventDefault();
     setLoading(true);
     setError("");
-    const hoy = new Date().toISOString().slice(0, 10);
+  const { start, end } = getLocalDayRange();
     // Verificar si ya existe apertura hoy SOLO si se está registrando apertura
     const { data: aperturasHoy } = await supabase
   .from("cierres")
@@ -95,8 +141,8 @@ export default function RegistroCierreView({
   .eq("tipo_registro", "apertura")
   .eq("cajero_id", usuarioActual?.id)
   .eq("caja", caja)
-  .gte("fecha", hoy + "T00:00:00")
-  .lte("fecha", hoy + "T23:59:59");
+  .gte("fecha", start)
+  .lte("fecha", end);
     if (
       fondoFijo &&
       !efectivo &&
@@ -118,8 +164,8 @@ export default function RegistroCierreView({
   .eq("tipo_registro", "cierre")
   .eq("cajero_id", usuarioActual?.id)
   .eq("caja", caja)
-  .gte("fecha", hoy + "T00:00:00")
-  .lte("fecha", hoy + "T23:59:59");
+  .gte("fecha", start)
+  .lte("fecha", end);
     if (
       cierresHoy &&
       cierresHoy.length > 0 &&
@@ -383,7 +429,7 @@ export default function RegistroCierreView({
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || aperturaLoading}
             style={{
               background: '#1976d2',
               color: '#fff',
@@ -400,6 +446,9 @@ export default function RegistroCierreView({
             {loading ? 'Guardando...' : 'Guardar cierre'}
           </button>
         </div>
+        {aperturaLoading && (
+          <div style={{ marginTop: 8, fontSize: 13, color: '#1976d2' }}>Cargando apertura...</div>
+        )}
         {drawerMessage && <div style={{ marginTop: 8, fontWeight: 700 }}>{drawerMessage}</div>}
         {error && <div style={{ color: "red", fontWeight: 600 }}>{error}</div>}
         {loading && (

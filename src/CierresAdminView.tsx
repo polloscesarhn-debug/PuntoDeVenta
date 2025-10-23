@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
+import { getLocalDayRange } from "./utils/fechas";
 
 export default function CierresAdminView({
   onVolver,
@@ -7,8 +8,8 @@ export default function CierresAdminView({
   onVolver?: () => void;
 }) {
   const [fecha, setFecha] = useState(() => {
-    const hoy = new Date();
-    return hoy.toISOString().slice(0, 10);
+    const { day } = getLocalDayRange();
+    return day;
   });
   const [cierres, setCierres] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -32,9 +33,12 @@ export default function CierresAdminView({
     try {
       let query = supabase.from("cierres").select("*");
       if (fecha) {
-        query = query
-          .gte("fecha", fecha + "T00:00:00")
-          .lte("fecha", fecha + "T23:59:59");
+        // construir rango a partir del día seleccionado (fecha en formato YYYY-MM-DD)
+        const start = new Date(
+          `${fecha}T00:00:00`
+        ).toISOString();
+        const end = new Date(`${fecha}T23:59:59.999`).toISOString();
+        query = query.gte("fecha", start).lte("fecha", end);
       }
       const { data, error } = await query;
       if (!error) {
@@ -110,22 +114,25 @@ export default function CierresAdminView({
     const cajero = apertura.cajero;
     const caja = apertura.caja;
 
+    const start = new Date(fechaCierre.slice(0, 10) + "T00:00:00").toISOString();
+    const end = new Date(fechaCierre.slice(0, 10) + "T23:59:59.999").toISOString();
+
     const { data: aperturas } = await supabase
       .from("cierres")
       .select("fondo_fijo_registrado")
       .eq("tipo_registro", "apertura")
       .eq("cajero", cajero)
       .eq("caja", caja)
-      .gte("fecha", fechaCierre.slice(0, 10) + "T00:00:00")
-      .lte("fecha", fechaCierre.slice(0, 10) + "T23:59:59");
+      .gte("fecha", start)
+      .lte("fecha", end);
 
     const fondoFijoDia =
       aperturas && aperturas.length > 0
         ? parseFloat(aperturas[0].fondo_fijo_registrado)
         : 0;
 
-    const desde = fechaCierre.slice(0, 10) + "T00:00:00";
-    const hasta = fechaCierre.slice(0, 10) + "T23:59:59";
+  const desde = start;
+  const hasta = end;
 
     const [
       { data: pagosEfectivo },

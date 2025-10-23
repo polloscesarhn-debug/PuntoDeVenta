@@ -1,6 +1,7 @@
 import { useState } from "react";
 import FondoImagen from "./FondoImagen";
 import { supabase } from "./supabaseClient";
+import { getLocalDayRange } from "./utils/fechas";
 
 interface AperturaViewProps {
   usuarioActual: { id: string; nombre: string } | null;
@@ -26,8 +27,7 @@ export default function AperturaView({
       setLoading(false);
       return;
     }
-    const hoy = new Date();
-    const fechaHoy = hoy.toISOString().slice(0, 10);
+    const { start, end } = getLocalDayRange();
     // Verificar si ya hay apertura hoy
     const { data: aperturas } = await supabase
       .from("cierres")
@@ -35,8 +35,8 @@ export default function AperturaView({
       .eq("tipo_registro", "apertura")
       .eq("cajero", usuarioActual?.nombre)
       .eq("caja", caja)
-      .gte("fecha", fechaHoy + "T00:00:00")
-      .lte("fecha", fechaHoy + "T23:59:59");
+      .gte("fecha", start)
+      .lte("fecha", end);
     if (aperturas && aperturas.length > 0) {
       window.location.href = "/punto-de-venta";
       setLoading(false);
@@ -71,8 +71,8 @@ export default function AperturaView({
         .eq("tipo_registro", "apertura")
         .eq("cajero", usuarioActual?.nombre)
         .eq("caja", caja)
-        .gte("fecha", fechaHoy + "T00:00:00")
-        .lte("fecha", fechaHoy + "T23:59:59");
+        .gte("fecha", start)
+        .lte("fecha", end);
       if (aperturas2 && aperturas2.length > 0) {
         window.location.href = "/punto-de-venta";
       }

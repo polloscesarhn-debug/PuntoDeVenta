@@ -1,6 +1,7 @@
 import { useState } from "react";
 import CajaOperadaView from "./CajaOperadaView";
 import { supabase } from "./supabaseClient";
+import { getLocalDayRange } from "./utils/fechas";
 
 interface LoginProps {
   onLogin: (user: any) => void;
@@ -37,25 +38,25 @@ export default function Login({ onLogin }: LoginProps) {
       if (user) {
         // Si es cajero, verificar si ya hizo apertura y cierre hoy
         if (user.rol === "cajero") {
-          const hoy = new Date().toISOString().slice(0, 10);
+          const { start, end } = getLocalDayRange();
           const caja = user.caja || user.caja_asignada || "";
-          // Consultar aperturas y cierres
+          // Consultar aperturas y cierres usando rango local
           const aperturas = await supabase
             .from("cierres")
             .select("id")
             .eq("tipo_registro", "apertura")
             .eq("cajero", user.nombre)
             .eq("caja", caja)
-            .gte("fecha", hoy + "T00:00:00")
-            .lte("fecha", hoy + "T23:59:59");
+            .gte("fecha", start)
+            .lte("fecha", end);
           const cierres = await supabase
             .from("cierres")
             .select("id")
             .eq("tipo_registro", "cierre")
             .eq("cajero", user.nombre)
             .eq("caja", caja)
-            .gte("fecha", hoy + "T00:00:00")
-            .lte("fecha", hoy + "T23:59:59");
+            .gte("fecha", start)
+            .lte("fecha", end);
           if (
             aperturas.data &&
             aperturas.data.length > 0 &&

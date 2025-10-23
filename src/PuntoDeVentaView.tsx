@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import PagoModal from "./PagoModal";
 import RegistroCierreView from "./RegistroCierreView";
 import { createClient } from "@supabase/supabase-js";
+import { getLocalDayRange } from "./utils/fechas";
 
 interface Producto {
   id: string;
@@ -55,6 +56,69 @@ export default function PuntoDeVentaView({
   ) => void;
 }) {
   const [showCierre, setShowCierre] = useState(false);
+  const [showResumen, setShowResumen] = useState(false);
+  const [resumenLoading, setResumenLoading] = useState(false);
+  const [resumenData, setResumenData] = useState<{
+    efectivo: number;
+    tarjeta: number;
+    transferencia: number;
+  } | null>(null);
+
+  // Función para obtener resumen de caja del día (EFECTIVO/TARJETA/TRANSFERENCIA)
+  async function fetchResumenCaja() {
+    setShowResumen(true);
+    setResumenLoading(true);
+    try {
+      const { start, end } = getLocalDayRange();
+      const [
+        { data: pagosEfectivo },
+        { data: pagosTarjeta },
+        { data: pagosTrans },
+      ] = await Promise.all([
+        supabase
+          .from("pagos")
+          .select("monto")
+          .eq("tipo", "Efectivo")
+          .eq("cajero_id", usuarioActual?.id)
+          .gte("fecha_hora", start)
+          .lte("fecha_hora", end),
+        supabase
+          .from("pagos")
+          .select("monto")
+          .eq("tipo", "Tarjeta")
+          .eq("cajero_id", usuarioActual?.id)
+          .gte("fecha_hora", start)
+          .lte("fecha_hora", end),
+        supabase
+          .from("pagos")
+          .select("monto")
+          .eq("tipo", "Transferencia")
+          .eq("cajero_id", usuarioActual?.id)
+          .gte("fecha_hora", start)
+          .lte("fecha_hora", end),
+      ]);
+
+      const efectivoSum = (pagosEfectivo || []).reduce(
+        (s: number, p: any) => s + parseFloat(p.monto || 0),
+        0
+      );
+      const tarjetaSum = (pagosTarjeta || []).reduce(
+        (s: number, p: any) => s + parseFloat(p.monto || 0),
+        0
+      );
+      const transSum = (pagosTrans || []).reduce(
+        (s: number, p: any) => s + parseFloat(p.monto || 0),
+        0
+      );
+
+      setResumenData({ efectivo: efectivoSum, tarjeta: tarjetaSum, transferencia: transSum });
+    } catch (err) {
+      console.error("Error al obtener resumen de caja:", err);
+      setResumenData({ efectivo: 0, tarjeta: 0, transferencia: 0 });
+    } finally {
+      setResumenLoading(false);
+    }
+  }
   const [theme, setTheme] = useState<"lite" | "dark">(() => {
     try {
       const stored = localStorage.getItem("theme");
@@ -144,10 +208,10 @@ export default function PuntoDeVentaView({
 
   // Consultar cierre de la fecha actual y redirigir según diferencia/observacion
   useEffect(() => {
-    async function consultarCierreYRedirigir() {
+  async function consultarCierreYRedirigir() {
       if (!setView || !usuarioActual) return;
-      // Consultar el cierre de hoy para este cajero y caja
-      const hoy = new Date().toISOString().slice(0, 10);
+  // Consultar el cierre de hoy para este cajero y caja usando rango local
+  const { start, end } = getLocalDayRange();
       // Obtener caja asignada
       let cajaAsignada = caiInfo?.caja_asignada;
       if (!cajaAsignada) {
@@ -166,8 +230,8 @@ export default function PuntoDeVentaView({
         .eq("tipo_registro", "cierre")
         .eq("cajero", usuarioActual?.nombre)
         .eq("caja", cajaAsignada)
-        .gte("fecha", hoy + "T00:00:00")
-        .lte("fecha", hoy + "T23:59:59");
+        .gte("fecha", start)
+        .lte("fecha", end);
       if (cierresHoy && cierresHoy.length > 0) {
         const cierre = cierresHoy[0];
         if (cierre.diferencia !== 0 && cierre.observacion === "sin aclarar") {
@@ -436,6 +500,71 @@ export default function PuntoDeVentaView({
           </div>
         {/* botón de prueba temporal eliminado */}
       </div>
+      {/* Modal de resumen de caja (fuera del header) */}
+      {showResumen && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0,0,0,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 110000,
+          }}
+          onClick={() => setShowResumen(false)}
+        >
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 12,
+              padding: 24,
+              minWidth: 300,
+              boxShadow: "0 8px 32px #0003",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ marginTop: 0, color: "#1976d2" }}>Resumen de caja</h3>
+            {resumenLoading ? (
+              <div style={{ padding: 12 }}>Cargando...</div>
+            ) : resumenData ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div>
+                  <strong>EFECTIVO:</strong> {resumenData.efectivo.toFixed(2)}
+                </div>
+                <div>
+                  <strong>TARJETA:</strong> {resumenData.tarjeta.toFixed(2)}
+                </div>
+                <div>
+                  <strong>TRANSFERENCIA:</strong> {resumenData.transferencia.toFixed(2)}
+                </div>
+              </div>
+            ) : (
+              <div>No hay datos</div>
+            )}
+            <div style={{ display: "flex", justifyContent: "center", marginTop: 16 }}>
+              <button
+                onClick={() => setShowResumen(false)}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "#1976d2",
+                  color: "#fff",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Botón cerrar sesión, volver y interruptor de tema */}
       <div
         style={{
@@ -531,7 +660,7 @@ export default function PuntoDeVentaView({
         )}
         {/* Botón de cerrar sesión oculto */}
         <button style={{ display: "none" }}>Cerrar sesión</button>
-        {/* Botón para registrar cierre de caja */}
+  {/* Botón para registrar cierre de caja */}
         <button
           style={{
             background: "#fbc02d",
@@ -548,6 +677,24 @@ export default function PuntoDeVentaView({
         >
           Registrar cierre de caja
         </button>
+        {/* Botón visible de Resumen de caja debajo del botón 'Registrar cierre de caja' */}
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 12 }}>
+          <button
+            style={{
+              fontSize: 16,
+              padding: "10px 22px",
+              borderRadius: 8,
+              background: "#1976d2",
+              color: "#fff",
+              fontWeight: 700,
+              border: "none",
+              cursor: "pointer",
+            }}
+            onClick={() => fetchResumenCaja()}
+          >
+            Resumen de caja
+          </button>
+        </div>
 
         {showCierre && (
           <div
@@ -566,32 +713,23 @@ export default function PuntoDeVentaView({
               caja={caiInfo?.caja_asignada || ""}
               onCierreGuardado={async () => {
                 if (!setView) return;
-                // Consultar el cierre de hoy para este cajero y caja
-                const hoy = new Date().toISOString().slice(0, 10);
+                // Consultar el cierre de hoy para este cajero y caja usando rango local
+                const { start, end } = getLocalDayRange();
                 const { data: cierresHoy } = await supabase
                   .from("cierres")
                   .select("diferencia, observacion")
                   .eq("tipo_registro", "cierre")
                   .eq("cajero", usuarioActual?.nombre)
                   .eq("caja", caiInfo?.caja_asignada || "")
-                  .gte("fecha", hoy + "T00:00:00")
-                  .lte("fecha", hoy + "T23:59:59");
+                  .gte("fecha", start)
+                  .lte("fecha", end);
                 if (cierresHoy && cierresHoy.length > 0) {
                   const cierre = cierresHoy[0];
-                  if (
-                    cierre.diferencia !== 0 &&
-                    cierre.observacion === "sin aclarar"
-                  ) {
+                  if (cierre.diferencia !== 0 && cierre.observacion === "sin aclarar") {
                     setView("resultadosCaja");
-                  } else if (
-                    cierre.diferencia !== 0 &&
-                    cierre.observacion === "aclarado"
-                  ) {
+                  } else if (cierre.diferencia !== 0 && cierre.observacion === "aclarado") {
                     setView("cajaOperada");
-                  } else if (
-                    cierre.diferencia === 0 &&
-                    cierre.observacion === "cuadrado"
-                  ) {
+                  } else if (cierre.diferencia === 0 && cierre.observacion === "cuadrado") {
                     setView("cajaOperada");
                   } else {
                     setView("resultadosCaja");
