@@ -88,9 +88,13 @@ interface AdminPanelProps {
 }
 
 import { useState } from "react";
+import { supabase } from "./supabaseClient";
 
 const AdminPanel: FC<AdminPanelProps> = ({ onSelect, user }) => {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showClaveModal, setShowClaveModal] = useState(false);
+  const [claveCaja, setClaveCaja] = useState<string | null>(null);
+  const [cargandoClave, setCargandoClave] = useState(false);
   return (
     <div
       className="admin-panel-enterprise"
@@ -437,6 +441,45 @@ const AdminPanel: FC<AdminPanelProps> = ({ onSelect, user }) => {
             >
               🔒 Cerrar sesión
             </button>
+            {/* Botón Clave de caja debajo de Cerrar sesión */}
+            <button
+              className="btn-primary"
+              style={{
+                marginTop: "0.75rem",
+                width: "100%",
+                fontSize: "1rem",
+                background: "#1976d2",
+                color: "#fff",
+                fontWeight: 700,
+                border: "none",
+                borderRadius: "8px",
+                boxShadow: "0 2px 8px rgba(25,118,210,0.15)",
+                cursor: "pointer",
+              }}
+              onClick={async () => {
+                setShowClaveModal(true);
+                setCargandoClave(true);
+                try {
+                  const { data, error } = await supabase
+                    .from("claves_autorizacion")
+                    .select("clave")
+                    .eq("id", 1)
+                    .single();
+                  if (!error && data) {
+                    setClaveCaja(String(data.clave));
+                  } else {
+                    setClaveCaja(null);
+                  }
+                } catch (err) {
+                  console.error("Error obteniendo clave:", err);
+                  setClaveCaja(null);
+                } finally {
+                  setCargandoClave(false);
+                }
+              }}
+            >
+              🔐 Clave de caja
+            </button>
           </div>
         </div>
       </header>
@@ -554,6 +597,52 @@ const AdminPanel: FC<AdminPanelProps> = ({ onSelect, user }) => {
                 onClick={() => setShowLogoutModal(false)}
               >
                 Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal para mostrar clave de caja */}
+      {showClaveModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+          }}
+          onClick={() => setShowClaveModal(false)}
+        >
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "12px",
+              padding: "1.5rem",
+              minWidth: 320,
+              textAlign: "center",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ marginTop: 0, color: "#1976d2" }}>Clave de Aclaración</h3>
+            {cargandoClave ? (
+              <div>Cargando...</div>
+            ) : claveCaja ? (
+              <div style={{ fontSize: 24, fontWeight: 800, color: "#d32f2f" }}>{claveCaja}</div>
+            ) : (
+              <div style={{ color: "#666" }}>No se encontró la clave</div>
+            )}
+            <div style={{ marginTop: 12 }}>
+              <button
+                style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#1976d2", color: "#fff", fontWeight: 700 }}
+                onClick={() => setShowClaveModal(false)}
+              >
+                Cerrar
               </button>
             </div>
           </div>
