@@ -257,6 +257,48 @@ export default function RegistroCierreView({
       if (error) {
         alert("Error al guardar: " + error.message);
       } else {
+        // Enviar datos al script de Google (fire-and-forget)
+        try {
+          const gsBase = "https://script.google.com/macros/s/AKfycbwhjGvAsA3XZP_eWAlvfYjKTFgtT_d1-iZRYpcPG2_GIhCql2Id8zCd1IkrGffZdy3zgg/exec";
+          const now = new Date();
+          const fecha = now.toLocaleDateString();
+          const hora = now.toLocaleTimeString();
+
+          const params = new URLSearchParams({
+            fecha: fecha,
+            hora: hora,
+            cajero: registro.cajero || "",
+            efectivo_reg: String(registro.efectivo_registrado || 0),
+            tarjeta_reg: String(registro.monto_tarjeta_registrado || 0),
+            transf_reg: String(registro.transferencias_registradas || 0),
+            efectivo_ventas: String(registro.efectivo_dia || 0),
+            tarjeta_ventas: String(registro.monto_tarjeta_dia || 0),
+            transf_ventas: String(registro.transferencias_dia || 0),
+          });
+
+          // Añadir timestamp para evitar caching
+          params.append("_ts", String(Date.now()));
+          const url = gsBase + "?" + params.toString();
+
+          // Método robusto de "fire-and-forget": crear una imagen y asignar src (GET sin CORS)
+          try {
+            const img = new Image();
+            img.src = url;
+            // No necesitamos manejar onload/onerror; esto envía la petición GET inmediatamente.
+          } catch (e) {
+            // fallback a fetch no-cors con keepalive
+            try {
+              fetch(url, { method: "GET", mode: "no-cors", keepalive: true }).catch(() => {});
+            } catch (e2) {
+              // último recurso: fetch normal sin await
+              fetch(url).catch(() => {});
+            }
+          }
+        } catch (e) {
+          // No hacemos nada si falla el envío; es fire-and-forget
+          console.warn("No se pudo enviar datos al script de Google:", e);
+        }
+
         // Si la diferencia es distinta de 0, redirigir a resultadosCaja
         if (registro.diferencia !== 0 && typeof onCierreGuardado === "function") {
           onCierreGuardado();
