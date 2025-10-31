@@ -83,12 +83,18 @@ export default function ResultadosView({
         .order("fecha", { ascending: false });
 
       if (desde && hasta) {
+        // Normalizar filtros para incluir las 24 horas del día seleccionado
+        const desdeInicio = `${desde} 00:00:00`;
+        const hastaFin = `${hasta} 23:59:59`;
+
         factQuery = supabase
           .from("facturas")
           .select("*")
-          .gte("fecha_hora", desde)
-          .lte("fecha_hora", hasta)
+          .gte("fecha_hora", desdeInicio)
+          .lte("fecha_hora", hastaFin)
           .order("fecha_hora", { ascending: false });
+
+        // Para tablas que usan campo "fecha" (sin hora) mantener comparación por día
         gastQuery = supabase
           .from("gastos")
           .select("*")
@@ -121,6 +127,231 @@ export default function ResultadosView({
       }
     } catch (error) {
       console.error("Error fetching data:", error);
+    }
+  }
+
+  async function generarReportePDF() {
+    if (!desde || !hasta) {
+      alert("Por favor selecciona las fechas Desde y Hasta antes de generar el reporte.");
+      return;
+    }
+
+    // Abrir ventana inmediatamente (acción directa del click) para evitar bloqueo de popups
+    const win = window.open("", "_blank");
+    if (!win) {
+      alert("Popup bloqueado. Por favor permite popups o usa la opción alternativa.");
+      return;
+    }
+    // Mostrar placeholder de carga
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Generando reporte...</title></head><body><h3>Cargando reporte...</h3></body></html>`);
+    win.document.close();
+
+    try {
+  // Normalizar rango al mismo formato que usa la vista: 'YYYY-MM-DD HH:MM:SS'
+  // (evitamos toISOString() para no introducir desplazamientos por zona horaria)
+  const desdeInicio = `${desde} 00:00:00`;
+  const hastaFin = `${hasta} 23:59:59`;
+
+      // Consultas paralelas
+      const [factRes, gastRes, pagosRes, cierresRes] = await Promise.all([
+        supabase
+          .from("facturas")
+          .select("*")
+          .gte("fecha_hora", desdeInicio)
+          .lte("fecha_hora", hastaFin)
+          .order("fecha_hora", { ascending: true }),
+        supabase
+          .from("gastos")
+          .select("*")
+          .gte("fecha", desde)
+          .lte("fecha", hasta)
+          .order("fecha", { ascending: true }),
+        supabase
+          .from("pagos")
+          .select("*")
+          .gte("fecha_hora", desdeInicio)
+          .lte("fecha_hora", hastaFin)
+          .order("fecha_hora", { ascending: true }),
+        supabase
+          .from("cierres")
+          .select("monto, observacion, fecha")
+          .eq("tipo_registro", "cierre")
+          .eq("observacion", "sin aclarar")
+          // la columna `fecha` puede ser fecha o timestamp; usar comparador por día
+          .gte("fecha", desde)
+          .lte("fecha", hasta)
+          .order("fecha", { ascending: true }),
+      ]);
+
+      const factData = factRes.data || [];
+      const gastData = gastRes.data || [];
+      const pagosData = pagosRes.data || [];
+      const cierresData = cierresRes.data || [];
+
+      const totalFacturas = factData.length;
+      const totalVentas = factData.reduce((s: number, f: any) => {
+        const val = f.total !== undefined && f.total !== null ? Number(String(f.total).replace(/,/g, "")) : 0;
+        return s + (isNaN(val) ? 0 : val);
+      }, 0);
+      const totalGastos = gastData.reduce((s: number, g: any) => s + parseFloat(g.monto || 0), 0);
+      const balanceReporte = totalVentas - totalGastos;
+      const rentabilidadPercent = totalGastos > 0 ? (balanceReporte / totalGastos) * 100 : null;
+
+      // Desglose de pagos
+      const pagosPorTipo: { [k: string]: number } = {};
+      pagosData.forEach((p: any) => {
+        const tipo = p.tipo || "Desconocido";
+        pagosPorTipo[tipo] = (pagosPorTipo[tipo] || 0) + parseFloat(p.monto || 0);
+      });
+
+      // Total de todos los pagos (raw) y cálculo de pagos únicos por factura
+      const totalPagosRaw = pagosData.reduce((s: number, p: any) => {
+        const val = p.monto !== undefined && p.monto !== null ? Number(String(p.monto).replace(/,/g, "")) : 0;
+        return s + (isNaN(val) ? 0 : val);
+      }, 0);
+
+      // Agrupar pagos por número de factura para no contar facturas repetidas
+      const pagosPorFacturaMap = new Map<string, { factura: string; monto: number; tipos: Set<string>; cajero?: string; fecha?: string }>();
+      pagosData.forEach((p: any) => {
+        const facturaKey = p.factura ? String(p.factura) : `__no_fact_${p.id || Math.random()}`;
+        const monto = p.monto !== undefined && p.monto !== null ? Number(String(p.monto).replace(/,/g, "")) : 0;
+        const tipo = p.tipo || "";
+        const fecha = p.fecha_hora || p.fecha || "";
+        const cajero = p.cajero || "";
+        if (pagosPorFacturaMap.has(facturaKey)) {
+          const entry = pagosPorFacturaMap.get(facturaKey)!;
+          entry.monto += isNaN(monto) ? 0 : monto;
+          if (tipo) entry.tipos.add(tipo);
+          // mantener la fecha más temprana
+          if (fecha && (!entry.fecha || fecha < entry.fecha)) entry.fecha = fecha;
+        } else {
+          const tiposSet = new Set<string>();
+          if (tipo) tiposSet.add(tipo);
+          pagosPorFacturaMap.set(facturaKey, { factura: facturaKey, monto: isNaN(monto) ? 0 : monto, tipos: tiposSet, cajero, fecha });
+        }
+      });
+
+      const pagosUnicosArray = Array.from(pagosPorFacturaMap.values());
+      const totalPagosUnique = pagosUnicosArray.reduce((s, p) => s + (p.monto || 0), 0);
+
+      // Debug: comparar facturas y pagos por factura (opcional)
+      try {
+        console.debug("ReportePDF: facturas count", factData.length, "pagos count", pagosData.length);
+        console.debug("ReportePDF: totalVentas (facturas)", totalVentas, "totalPagosRaw (pagos)", totalPagosRaw, "totalPagosUnique", totalPagosUnique);
+      } catch (e) {}
+
+      // Construir HTML para imprimir
+      const titulo = `Reporte Ventas ${desde} → ${hasta}`;
+  let html = `<!doctype html><html><head><meta charset="utf-8"><title>${titulo}</title>`;
+  // indicar icono (si existe en /favicon-32.png)
+  html += `<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />`;
+  html += `<style>body{font-family: Arial, Helvetica, sans-serif;margin:20px;color:#111}h1,h2{margin:0 0 8px}table{width:100%;border-collapse:collapse;margin-top:8px}th,td{border:1px solid #ccc;padding:6px;text-align:left}thead th{background:#f2f2f2} .section{margin-top:18px}.report-header{display:flex;align-items:center;gap:16px}.report-logo{width:84px;height:84px;object-fit:contain}.report-title{font-size:28px;font-weight:800}</style>`;
+  // Header con logo (intenta cargar /logo.png, si no existe se oculta)
+      html += `</head><body>`;
+  // intentar usar /favicon-32.png como logo; si falla, caer a /logo.svg
+  html += `<div class="report-header"><img class="report-logo" src="/favicon-32.png" alt="logo" onerror="this.onerror=null;this.src='/logo.svg'"/><div><div class="report-title">POLLOS CESAR</div><div style=\"margin-top:6px;color:#444\">${titulo}</div></div></div>`;
+      html += `<div class="section"><h2>Resumen</h2><table><tbody>`;
+      html += `<tr><th>Total facturas</th><td>${totalFacturas}</td></tr>`;
+  html += `<tr><th>Total ventas</th><td>L ${totalVentas.toFixed(2)}</td></tr>`;
+  html += `<tr><th>Total gastos</th><td>L ${totalGastos.toFixed(2)}</td></tr>`;
+  html += `<tr><th>Balance</th><td>L ${balanceReporte.toFixed(2)}</td></tr>`;
+  html += `<tr><th>Rentabilidad</th><td>${rentabilidadPercent !== null ? rentabilidadPercent.toFixed(2) + "%" : "N/A (sin gastos)"}</td></tr>`;
+ 
+
+      html += `<div class="section"><h2>Pagos</h2><table><thead><tr><th>Tipo</th><th>Monto</th></tr></thead><tbody>`;
+      const tipos = ["Efectivo", "Transferencia", "Tarjeta"];
+      tipos.forEach((t) => {
+        const m = Number(pagosPorTipo[t] || 0);
+        const mFmt = m.toLocaleString('de-DE', { minimumFractionDigits: 2 });
+        html += `<tr><td>${t}</td><td>L ${mFmt}</td></tr>`;
+      });
+      // Incluir otros tipos si existen
+      Object.keys(pagosPorTipo).forEach((t) => {
+        if (!tipos.includes(t)) {
+          const m = Number(pagosPorTipo[t] || 0);
+          const mFmt = m.toLocaleString('de-DE', { minimumFractionDigits: 2 });
+          html += `<tr><td>${t}</td><td>L ${mFmt}</td></tr>`;
+        }
+      });
+      // Total de pagos en el resumen
+      const totalPagosFmt = Number(totalPagosUnique || 0).toLocaleString('de-DE', { minimumFractionDigits: 2 });
+      html += `<tr><th style="text-align:right">Total Pagos (por factura única)</th><th>L ${totalPagosFmt}</th></tr>`;
+      // si es distinto, mostrar total raw como referencia
+      if (totalPagosRaw !== totalPagosUnique) {
+        const totalPagosRawFmt = Number(totalPagosRaw).toLocaleString('de-DE', { minimumFractionDigits: 2 });
+        html += `<tr><th style="text-align:right">Total Pagos (raw)</th><th>L ${totalPagosRawFmt}</th></tr>`;
+      }
+      html += `</tbody></table></div>`;
+
+      html += `<div class="section"><h2>Historial de cierres (sin aclarar)</h2>`;
+      if (cierresData.length === 0) {
+        html += `<p>No hay cierres "sin aclarar" en el rango seleccionado.</p>`;
+      } else {
+        html += `<table><thead><tr><th>Fecha</th><th>Monto</th><th>Observación</th></tr></thead><tbody>`;
+        cierresData.forEach((c: any) => {
+          const fecha = c.fecha ? c.fecha.slice(0, 19).replace('T', ' ') : '';
+          html += `<tr><td>${fecha}</td><td>L ${parseFloat(c.monto || 0).toFixed(2)}</td><td>${c.observacion || ''}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+      }
+      html += `</div>`;
+
+      // Tabla de ventas (facturas)
+      html += `<div class="section"><h2>Tabla de Ventas Realizadas</h2>`;
+      if (factData.length === 0) html += `<p>No hay ventas en el rango seleccionado.</p>`;
+      else {
+        html += `<table><thead><tr><th>Fecha</th><th>Factura</th><th>Cliente</th><th>Cajero</th><th>Total</th></tr></thead><tbody>`;
+        factData.forEach((f: any) => {
+          const fecha = f.fecha_hora ? f.fecha_hora.replace('T', ' ').slice(0, 19) : '';
+          const totalFmt = Number(f.total || 0).toLocaleString('de-DE', { minimumFractionDigits: 2 });
+          html += `<tr><td>${fecha}</td><td>${f.factura || ''}</td><td>${f.cliente || ''}</td><td>${f.cajero || ''}</td><td>L ${totalFmt}</td></tr>`;
+        });
+        // Fila de total de ventas
+        const totalVentasFmt = Number(totalVentas || 0).toLocaleString('de-DE', { minimumFractionDigits: 2 });
+        html += `<tr><th colspan="4" style="text-align:right">Total Ventas</th><th>L ${totalVentasFmt}</th></tr>`;
+        html += `</tbody></table>`;
+      }
+      html += `</div>`;
+
+      html += `</body></html>`;
+      
+      // Tabla de pagos
+      html += `<div class="section"><h2>Tabla de Pagos</h2>`;
+      if (pagosData.length === 0) html += `<p>No hay pagos en el rango seleccionado.</p>`;
+      else {
+        // Mostrar pagos agrupados por factura (no repetir facturas)
+        html += `<table><thead><tr><th>Fecha</th><th>Tipo(s)</th><th>Factura</th><th>Cajero</th><th>Monto</th></tr></thead><tbody>`;
+        pagosUnicosArray.forEach((p) => {
+          const fecha = p.fecha ? (p.fecha.replace ? p.fecha.replace('T', ' ').slice(0, 19) : p.fecha) : '';
+          const tiposStr = Array.from(p.tipos).filter(Boolean).join(', ');
+          const cajero = p.cajero || '';
+          html += `<tr><td>${fecha}</td><td>${tiposStr}</td><td>${p.factura}</td><td>${cajero}</td><td>L ${Number(p.monto || 0).toFixed(2)}</td></tr>`;
+        });
+        // Fila de totales al final de la tabla de pagos (usar total por factura única)
+        html += `<tr><th colspan="4" style="text-align:right">Total Pagos</th><th>L ${totalPagosUnique.toFixed(2)}</th></tr>`;
+        // si difiere, mostrar total raw también
+        if (totalPagosRaw !== totalPagosUnique) {
+          html += `<tr><th colspan="4" style="text-align:right">Total Pagos (raw)</th><th>L ${totalPagosRaw.toFixed(2)}</th></tr>`;
+        }
+        html += `</tbody></table>`;
+      }
+      html += `</div>`;
+
+
+      // Reemplazar contenido de la ventana ya abierta y lanzar print
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      setTimeout(() => {
+        win.print();
+      }, 500);
+    } catch (error) {
+      console.error("Error generando reporte:", error);
+      try {
+        win.document.body.innerHTML = "<p>Error al generar el reporte. Revisa la consola para más detalles.</p>";
+      } catch (e) {}
+      alert("Error al generar el reporte. Revisa la consola para más detalles.");
     }
   }
 
@@ -551,6 +782,16 @@ export default function ResultadosView({
           </div>
           <button className="btn-filter" onClick={fetchDatos}>
             🔍 Filtrar
+          </button>
+          <button
+            className="btn-filter"
+            onClick={async () => {
+              await generarReportePDF();
+            }}
+            title="Generar reporte listo para imprimir"
+            style={{ marginLeft: 8 }}
+          >
+            📝 Reporte PDF
           </button>
         </div>
 

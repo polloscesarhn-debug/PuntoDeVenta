@@ -127,6 +127,8 @@ export default function PuntoDeVentaView({
   const [facturaActual, setFacturaActual] = useState<string>("");
   const [showPagoModal, setShowPagoModal] = useState(false);
   const [showClienteModal, setShowClienteModal] = useState(false);
+  const [showNoConnectionModal, setShowNoConnectionModal] = useState(false);
+  const [checkingFactura, setCheckingFactura] = useState(false);
   // Eliminado showFacturaModal
   const [nombreCliente, setNombreCliente] = useState("");
   const [caiInfo, setCaiInfo] = useState<{
@@ -1336,10 +1338,117 @@ export default function PuntoDeVentaView({
                 opacity: seleccionados.length === 0 ? 0.5 : 1,
                 transition: "background 0.3s",
               }}
-              disabled={seleccionados.length === 0}
-              onClick={() => setShowClienteModal(true)} // <-- CAMBIA ESTO
+              disabled={seleccionados.length === 0 || checkingFactura}
+              onClick={async () => {
+                // Al tocar "Confirmar Pedido" validar conexión y número de factura
+                if (facturaActual === "Límite alcanzado") {
+                  alert("¡Límite de facturas alcanzado!");
+                  return;
+                }
+                if (!navigator.onLine) {
+                  // Mostrar modal que indique problema de red
+                  setShowNoConnectionModal(true);
+                  return;
+                }
+                // Evitar llamadas concurrentes
+                if (checkingFactura) return;
+                setCheckingFactura(true);
+                try {
+                  // Obtener datos de CAI (rango y caja) para respetar límite si es posible
+                  let rango_fin: number | null = null;
+                  let cajaAsignada = caiInfo?.caja_asignada;
+                  try {
+                    const { data: caiData } = await supabase
+                      .from("cai_facturas")
+                      .select("rango_desde, rango_hasta, caja_asignada")
+                      .eq("cajero_id", usuarioActual?.id)
+                      .single();
+                    if (caiData) {
+                      rango_fin = caiData.rango_hasta ? parseInt(caiData.rango_hasta) : null;
+                      cajaAsignada = caiData.caja_asignada || cajaAsignada;
+                    }
+                  } catch (e) {
+                    // si falla, continuar sin rango
+                  }
+
+                  // Empezar desde el número actual
+                  let num = parseInt(facturaActual as string);
+                  if (!Number.isFinite(num)) {
+                    // Si no es numérico, intentar recalcular como en fetchCaiYFactura
+                    const { data: facturasData } = await supabase
+                      .from("facturas")
+                      .select("factura")
+                      .eq("cajero", usuarioActual?.nombre)
+                      .eq("caja", cajaAsignada || "");
+                    let maxFactura = -1;
+                    if (facturasData && facturasData.length > 0) {
+                      for (const f of facturasData) {
+                        const n = parseInt(f.factura);
+                        if (Number.isFinite(n) && n > maxFactura) maxFactura = n;
+                      }
+                    }
+                    if (maxFactura >= 0) {
+                      num = maxFactura + 1;
+                    } else {
+                      // fallback: usar 1
+                      num = 1;
+                    }
+                  }
+
+                  // Buscar un número libre incrementando si está ocupado en facturas o pagos
+                  const maxAttempts = 1000; // to avoid infinite loop
+                  let attempts = 0;
+                  while (attempts < maxAttempts) {
+                    attempts++;
+                    const facturaStr = num.toString();
+                    // comprobar en facturas
+                    const { data: factData } = await supabase
+                      .from("facturas")
+                      .select("factura")
+                      .eq("factura", facturaStr)
+                      .eq("caja", cajaAsignada || "")
+                      .limit(1);
+                    // comprobar en pagos
+                    const { data: pagosData } = await supabase
+                      .from("pagos")
+                      .select("factura")
+                      .eq("factura", facturaStr)
+                      .eq("cajero", usuarioActual?.nombre)
+                      .eq("caja", cajaAsignada || "")
+                      .limit(1);
+
+                    const existeFactura = Array.isArray(factData) && factData.length > 0;
+                    const existePago = Array.isArray(pagosData) && pagosData.length > 0;
+
+                    if (!existeFactura && !existePago) {
+                      // número libre
+                      setFacturaActual(facturaStr);
+                      setShowClienteModal(true);
+                      break;
+                    }
+
+                    // Si existe, incrementar y reintentar
+                    num++;
+                    // Si tenemos rango_fin, verificar que no lo excedemos
+                    if (rango_fin && num > rango_fin) {
+                      setFacturaActual("Límite alcanzado");
+                      alert("¡Se ha alcanzado el límite de facturas para este cajero!");
+                      break;
+                    }
+                  }
+
+                  if (attempts >= maxAttempts) {
+                    alert("No se pudo asignar un número de factura libre, intenta de nuevo más tarde.");
+                  }
+                } catch (err) {
+                  console.error("Error validando factura:", err);
+                  alert("Error al validar número de factura. Intenta de nuevo.");
+                } finally {
+                  setCheckingFactura(false);
+                }
+              }}
             >
-              Confirmar Pedido
+              {checkingFactura ? "Verificando..." : "Confirmar Pedido"}
             </button>
           </div>
         </div>
@@ -1418,6 +1527,53 @@ export default function PuntoDeVentaView({
                 disabled={!nombreCliente.trim()}
               >
                 Continuar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showNoConnectionModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0,0,0,0.25)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 99999,
+          }}
+          onClick={() => setShowNoConnectionModal(false)}
+        >
+          <div
+            style={{
+              background: theme === "lite" ? "#fff" : "#232526",
+              borderRadius: 12,
+              padding: 24,
+              minWidth: 320,
+              boxShadow: "0 8px 32px #0003",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ marginTop: 0, color: "#d32f2f" }}>Sin conexión</h3>
+            <p>No hay conexión. Revisa tu red e intenta de nuevo.</p>
+            <div style={{ display: "flex", justifyContent: "center", marginTop: 12 }}>
+              <button
+                onClick={() => setShowNoConnectionModal(false)}
+                style={{
+                  padding: "8px 18px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "#1976d2",
+                  color: "#fff",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                Cerrar
               </button>
             </div>
           </div>
