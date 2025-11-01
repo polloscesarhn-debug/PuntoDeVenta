@@ -313,8 +313,20 @@ export default function ResultadosView({
       }
       html += `</div>`;
 
-      html += `</body></html>`;
-      
+      // Tabla de Gastos: incluir detalle de los gastos en el rango seleccionado
+      html += `<div class="section"><h2>Tabla de Gastos</h2>`;
+      if (gastData.length === 0) html += `<p>No hay gastos en el rango seleccionado.</p>`;
+      else {
+        html += `<table><thead><tr><th>Fecha</th><th>Monto</th><th>Motivo</th></tr></thead><tbody>`;
+        gastData.forEach((g: any) => {
+          const fecha = g.fecha ? (g.fecha.replace ? g.fecha.replace('T', ' ').slice(0, 19) : g.fecha) : '';
+          const monto = Number(g.monto || 0).toLocaleString('de-DE', { minimumFractionDigits: 2 });
+          const motivo = g.motivo || '';
+          html += `<tr><td>${fecha}</td><td>L ${monto}</td><td>${motivo}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+      }
+
       // Tabla de pagos
       html += `<div class="section"><h2>Tabla de Pagos</h2>`;
       if (pagosData.length === 0) html += `<p>No hay pagos en el rango seleccionado.</p>`;
