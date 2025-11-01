@@ -52,8 +52,13 @@ export default function FacturasEmitidasView({ onBack }: FacturasEmitidasViewPro
 
 	return (
 		<div style={{ padding: 32, background: 'linear-gradient(135deg, #e3f0ff 0%, #f8faff 100%)', minHeight: '100vh' }}>
-			<div style={{ maxWidth: 1200, margin: '0 auto', background: '#fff', borderRadius: 18, boxShadow: '0 4px 24px #0002', padding: 32 }}>
-				<h2 style={{ color: '#1976d2', fontWeight: 800, fontSize: 32, marginBottom: 16, letterSpacing: 1 }}>Facturas Emitidas</h2>
+					<div style={{ maxWidth: 1200, margin: '0 auto', background: '#fff', borderRadius: 18, boxShadow: '0 4px 24px #0002', padding: 32 }}>
+						<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, marginBottom: 8 }}>
+							<h2 style={{ color: '#1976d2', fontWeight: 800, fontSize: 32, margin: 0, letterSpacing: 1 }}>Facturas Emitidas</h2>
+							{onBack && (
+								<button onClick={onBack} style={{ background: '#1976d2', color: '#fff', borderRadius: 8, border: 'none', padding: '8px 18px', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>← Volver a Reporte de Ventas</button>
+							)}
+						</div>
 				<div style={{ display: 'flex', gap: 24, alignItems: 'center', marginBottom: 32, flexWrap: 'wrap', justifyContent: 'space-between' }}>
 					<div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
 						<label style={{ fontWeight: 600, color: '#1976d2' }}>Desde:
@@ -68,6 +73,24 @@ export default function FacturasEmitidasView({ onBack }: FacturasEmitidasViewPro
 						Total facturas: {facturas.length}
 					</div>
 				</div>
+
+				{/* Cards view para móviles (oculto en escritorio por CSS) */}
+							<div className="cards-grid" style={{ marginTop: 8 }}>
+								{facturas.map(f => (
+									<div key={f.id} className="factura-card" onClick={() => setModalFactura(f)}>
+										<div className="fc-left">#{f.id}</div>
+										<div className="fc-body">
+											<div className="fc-title">{f.factura}</div>
+											<div className="fc-sub">{f.cajero} · {f.caja || '—'}</div>
+											<div className="fc-date">{f.fecha_hora?.replace('T', ' ').slice(0, 19)}</div>
+										</div>
+										<div className="fc-right">
+											<div className="fc-amount">L {parseFloat(f.total).toFixed(2)}</div>
+											<div className="fc-chevron">›</div>
+										</div>
+									</div>
+								))}
+							</div>
 				<div style={{ overflowX: 'auto', marginTop: 8 }}>
 					{loading ? (
 						<div style={{ textAlign: 'center', padding: 32 }}>
@@ -75,7 +98,7 @@ export default function FacturasEmitidasView({ onBack }: FacturasEmitidasViewPro
 							<p style={{ color: '#1976d2', fontWeight: 600, marginTop: 16 }}>Cargando...</p>
 						</div>
 					) : (
-						<table style={{ width: '100%', borderCollapse: 'collapse', background: '#f8faff', borderRadius: 12, overflow: 'hidden', boxShadow: '0 2px 8px #0001' }}>
+						<table className="desktop-table" style={{ width: '100%', borderCollapse: 'collapse', background: '#f8faff', borderRadius: 12, overflow: 'hidden', boxShadow: '0 2px 8px #0001' }}>
 							<thead>
 								<tr style={{ background: '#1976d2', color: '#fff', fontSize: 16 }}>
 									<th style={{ padding: 12, fontWeight: 700 }}>ID</th>
@@ -129,6 +152,7 @@ export default function FacturasEmitidasView({ onBack }: FacturasEmitidasViewPro
 								))}
 							</tbody>
 														</table>
+
 					)}
 				</div>
 				{onBack && (
@@ -199,11 +223,19 @@ export default function FacturasEmitidasView({ onBack }: FacturasEmitidasViewPro
 					100% { transform: rotate(360deg); }
 				}
 				@media (max-width: 768px) {
-					table thead { display: none; }
-					table { min-width: 0; }
-					table tbody tr { display: block; margin-bottom: 12px; background: #fff; border-radius: 8px; padding: 8px; }
-					table tbody td { display: flex; justify-content: space-between; padding: 8px; border: none; }
-					table tbody td::before { content: attr(data-label) ": "; font-weight: 700; color: #1976d2; margin-right: 8px; flex: 0 0 45%; }
+					/* esconder la tabla en móvil y mostrar las cards */
+					.desktop-table { display: none !important; }
+					.cards-grid { display: grid !important; gap: 12px; }
+					.factura-card { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 12px; background: #fff; box-shadow: 0 8px 24px rgba(7,23,48,0.06); border: 1px solid rgba(25,118,210,0.06); cursor: pointer; transition: transform 0.12s ease, box-shadow 0.12s ease; }
+					.factura-card:hover { transform: translateY(-4px); box-shadow: 0 14px 34px rgba(7,23,48,0.09); }
+					.fc-left { width: 56px; height: 56px; border-radius: 10px; background: linear-gradient(180deg, #eaf4ff 0%, #fff 100%); display:flex; align-items:center; justify-content:center; color:#0b4f9a; font-weight:800; }
+					.fc-body { flex: 1; min-width: 0; }
+					.fc-title { font-weight: 800; color: #0b4f9a; font-size: 15px; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+					.fc-sub { color: #6b7280; font-size: 13px; margin-bottom: 4px; }
+					.fc-date { color: #94a3b8; font-size: 12px; }
+					.fc-right { text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+					.fc-amount { font-weight: 900; color: #1976d2; font-size: 15px; }
+					.fc-chevron { color: #cbd5e1; font-size: 20px; }
 				}
 			`}</style>
 		</div>

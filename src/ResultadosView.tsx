@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getLocalDayRange } from "./utils/fechas";
 import { supabase } from "./supabaseClient";
 import {
   BarChart,
@@ -24,8 +25,10 @@ export default function ResultadosView({
   onBack,
   onVerFacturasEmitidas,
 }: ResultadosViewProps) {
-  const [desde, setDesde] = useState("");
-  const [hasta, setHasta] = useState("");
+  // Inicializar los filtros de fecha al día actual (formato YYYY-MM-DD)
+  const today = getLocalDayRange().day;
+  const [desde, setDesde] = useState(() => today);
+  const [hasta, setHasta] = useState(() => today);
   const [facturas, setFacturas] = useState<any[]>([]);
   const [gastos, setGastos] = useState<any[]>([]);
   const [ventasMensuales, setVentasMensuales] = useState<any[]>([]);

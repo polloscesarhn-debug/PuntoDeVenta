@@ -465,17 +465,34 @@ export default function CaiFacturasView({ onBack }: CaiFacturasViewProps) {
           font-size: 1rem;
         }
 
+        /* For the select inside the CAI modal, use dark text so options are readable on light background */
+        .modal .form-select {
+          color: #111 !important;
+        }
+
         .form-input:focus, .form-select:focus {
           outline: none;
           border-color: var(--info);
           box-shadow: 0 0 0 3px rgba(25,118,210,0.1);
         }
 
+        /* Cards para móvil (ocultas por defecto) */
+        .cards-grid { display: none; }
+        .cai-card { display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 12px; background: #fff; box-shadow: 0 8px 24px rgba(7,23,48,0.06); border: 1px solid rgba(25,118,210,0.06); cursor: pointer; }
+        .cai-left { width:56px; height:56px; border-radius:10px; background:linear-gradient(180deg,#eaf4ff 0%,#fff 100%); display:flex; align-items:center; justify-content:center; color:#0b4f9a; font-weight:800; }
+        .cai-body { flex:1; min-width:0; }
+        .cai-title { font-weight:800; color:#0b4f9a; margin-bottom:6px; }
+        .cai-meta { color:#6b7280; font-size:13px; }
+
         @media (max-width: 768px) {
           .header { padding: 1rem; flex-direction: column; gap: 1rem; }
           .main-content { padding: 1rem; }
           .form-grid { grid-template-columns: 1fr; }
           .modal { margin: 1rem; padding: 1.5rem; }
+          /* Mostrar cards y ocultar tabla en móvil */
+          .table { display: none; }
+          .table-container { box-shadow: none; }
+          .cards-grid { display: grid; gap: 12px; }
         }
       `}</style>
 
@@ -573,6 +590,27 @@ export default function CaiFacturasView({ onBack }: CaiFacturasViewProps) {
                 })}
               </tbody>
             </table>
+            {/* Cards view para móviles (oculto en escritorio) */}
+            <div className="cards-grid" style={{ marginTop: 8 }}>
+              {facturas.map((f) => {
+                const cajero = usuarios.find((u) => u.id === f.cajero_id);
+                const totalFacturasRango = f.rango_hasta - f.rango_desde + 1;
+                return (
+                  <div key={f.id} className="cai-card" onClick={() => handleEdit(f)}>
+                    <div className="cai-left">CAI</div>
+                    <div className="cai-body">
+                      <div className="cai-title">{f.cai} <span style={{ color: 'var(--text-secondary)', fontWeight: 600, marginLeft: 8 }}>#{f.id}</span></div>
+                      <div className="cai-meta">Rango: {f.rango_desde.toLocaleString()} → {f.rango_hasta.toLocaleString()} · Caja: {f.caja_asignada}</div>
+                      <div className="cai-meta">Cajero: {cajero?.nombre || 'Sin asignar'} · Total facturas: {totalFacturasRango.toLocaleString()}</div>
+                    </div>
+                    <div style={{ textAlign: 'right', minWidth: 88 }}>
+                      <div style={{ fontWeight: 900, color: 'var(--info)' }}>{totalFacturasRango.toLocaleString()}</div>
+                      <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{f.creado_en ? f.creado_en.slice(0,19).replace('T',' ') : ''}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 

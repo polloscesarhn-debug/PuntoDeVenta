@@ -14,6 +14,15 @@ interface Gasto {
 
 export default function GastosView({ onBack }: GastosViewProps) {
   const [gastos, setGastos] = useState<Gasto[]>([]);
+  // Obtener usuario actual desde localStorage para aplicar filtros por cajero
+  const usuarioActual = (() => {
+    try {
+      const stored = localStorage.getItem("usuario");
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  })();
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
   const [montoTotal, setMontoTotal] = useState(0);
@@ -21,7 +30,11 @@ export default function GastosView({ onBack }: GastosViewProps) {
     fecha: "",
     monto: "",
     motivo: "",
+    cajero_id: "",
+    caja: "",
   });
+  const [cajeros, setCajeros] = useState<Array<{ id: string; nombre: string }>>([]);
+  const [cajaOptions, setCajaOptions] = useState<string[]>([]);
   const [editId, setEditId] = useState<number | null>(null);
   const [editGasto, setEditGasto] = useState({
     fecha: "",
@@ -32,22 +45,45 @@ export default function GastosView({ onBack }: GastosViewProps) {
 
   useEffect(() => {
     fetchGastos();
+    // Cargar lista de cajeros para que el admin pueda asignar al crear un gasto
+    (async () => {
+      try {
+        const { data } = await supabase.from("usuarios").select("id,nombre").eq("rol", "cajero");
+        setCajeros(data || []);
+      } catch (e) {
+        console.warn("No se pudo obtener la lista de cajeros:", e);
+      }
+    })();
   }, []);
 
   async function fetchGastos() {
     setLoading(true);
     try {
-      let query = supabase
-        .from("gastos")
-        .select("*")
-        .order("fecha", { ascending: false });
+      // Construir query base
+      let query = supabase.from("gastos").select("*").order("fecha", { ascending: false });
+
+      // Si hay filtro por fecha
       if (fechaDesde && fechaHasta) {
-        query = supabase
-          .from("gastos")
-          .select("*")
-          .gte("fecha", fechaDesde)
-          .lte("fecha", fechaHasta)
-          .order("fecha", { ascending: false });
+        query = supabase.from("gastos").select("*").gte("fecha", fechaDesde).lte("fecha", fechaHasta).order("fecha", { ascending: false });
+      }
+
+      // Si el usuario es cajero, limitar los gastos a los de su cajero_id y caja asignada
+      if (usuarioActual && usuarioActual.rol === "cajero") {
+        // Determinar caja asignada (intentar leerla desde una tabla cai_facturas)
+        let cajaAsignada = null as string | null;
+        try {
+          const { data: caiData } = await supabase
+            .from("cai_facturas")
+            .select("caja_asignada")
+            .eq("cajero_id", usuarioActual.id)
+            .single();
+          cajaAsignada = caiData?.caja_asignada || null;
+        } catch (e) {
+          // ignore and proceed without caja filter if lookup fails
+          cajaAsignada = null;
+        }
+        query = query.eq("cajero_id", usuarioActual.id);
+        if (cajaAsignada) query = query.eq("caja", cajaAsignada);
       }
       const { data } = await query;
       setGastos(data || []);
@@ -71,16 +107,33 @@ export default function GastosView({ onBack }: GastosViewProps) {
     if (!nuevoGasto.fecha || !nuevoGasto.monto || !nuevoGasto.motivo) return;
     setLoading(true);
     try {
-      await supabase
-        .from("gastos")
-        .insert([
-          {
-            fecha: nuevoGasto.fecha,
-            monto: nuevoGasto.monto,
-            motivo: nuevoGasto.motivo,
-          },
-        ]);
-      setNuevoGasto({ fecha: "", monto: "", motivo: "" });
+      // Preparar objeto a insertar
+      const insertObj: any = {
+        fecha: nuevoGasto.fecha,
+        monto: nuevoGasto.monto,
+        motivo: nuevoGasto.motivo,
+      };
+
+      // Si el usuario es cajero, añadir cajero_id y caja
+      const stored = localStorage.getItem("usuario");
+      const usuario = stored ? JSON.parse(stored) : null;
+      if (usuario && usuario.rol === "cajero") {
+        insertObj.cajero_id = usuario.id;
+        // intentar obtener caja asignada
+        try {
+          const { data: caiData } = await supabase
+            .from("cai_facturas")
+            .select("caja_asignada")
+            .eq("cajero_id", usuario.id)
+            .single();
+          insertObj.caja = caiData?.caja_asignada || null;
+        } catch (e) {
+          insertObj.caja = null;
+        }
+      }
+
+      await supabase.from("gastos").insert([insertObj]);
+  setNuevoGasto({ fecha: "", monto: "", motivo: "", cajero_id: "", caja: "" });
       fetchGastos();
     } catch (error) {
       console.error("Error adding gasto:", error);
@@ -471,6 +524,54 @@ export default function GastosView({ onBack }: GastosViewProps) {
               className="form-input"
               required
             />
+            {/* Para admins: elegir cajero y caja asignada */}
+            {usuarioActual && usuarioActual.rol === "Admin" && (
+              <>
+                <select
+                  value={nuevoGasto.cajero_id}
+                  onChange={async (e) => {
+                    const selId = e.target.value;
+                    setNuevoGasto({ ...nuevoGasto, cajero_id: selId, caja: "" });
+                    // Obtener caja asignada para ese cajero
+                    try {
+                      const { data: caiData } = await supabase
+                        .from("cai_facturas")
+                        .select("caja_asignada")
+                        .eq("cajero_id", selId)
+                        .single();
+                      const cajaAsig = caiData?.caja_asignada;
+                      if (cajaAsig) {
+                        setNuevoGasto((s) => ({ ...s, caja: cajaAsig }));
+                        setCajaOptions([cajaAsig]);
+                      } else {
+                        // obtener opciones generales
+                        const { data: all } = await supabase.from("cai_facturas").select("caja_asignada");
+                        const opts = (all || []).map((r: any) => r.caja_asignada).filter(Boolean);
+                        setCajaOptions(opts);
+                      }
+                    } catch (err) {
+                      console.warn("No se pudo obtener caja asignada:", err);
+                    }
+                  }}
+                  className="form-input"
+                >
+                  <option value="">Seleccionar cajero (opcional)</option>
+                  {cajeros.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nombre}</option>
+                  ))}
+                </select>
+                <select
+                  value={nuevoGasto.caja}
+                  onChange={(e) => setNuevoGasto({ ...nuevoGasto, caja: e.target.value })}
+                  className="form-input"
+                >
+                  <option value="">Seleccionar caja (opcional)</option>
+                  {cajaOptions.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </>
+            )}
             <button
               onClick={agregarGasto}
               className="btn-primary"

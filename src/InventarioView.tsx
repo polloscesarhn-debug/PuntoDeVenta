@@ -34,6 +34,8 @@ export default function InventarioView({ onBack }: InventarioViewProps) {
   const [editId, setEditId] = useState<string | null>(null);
   const [imagenFile, setImagenFile] = useState<File | null>(null);
   const [showModal, setShowModal] = useState(false);
+  // filtro para mostrar tipo de producto: 'todos' | 'comida' | 'bebida'
+  const [filtroTipo, setFiltroTipo] = useState<"todos" | "comida" | "bebida">("todos");
 
   useEffect(() => {
     const fetchProductos = async () => {
@@ -341,6 +343,23 @@ export default function InventarioView({ onBack }: InventarioViewProps) {
           color: var(--text-secondary);
         }
 
+  /* Cards para móvil: ocultas por defecto en escritorio */
+  .cards-grid { display: none; }
+  .mobile-filters { display: none; }
+        .product-card {
+          background: rgba(255,255,255,0.04);
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          padding: 12px;
+          display: flex;
+          gap: 12px;
+          align-items: center;
+        }
+        .product-card img { width: 64px; height: 64px; border-radius: 8px; object-fit: cover; }
+        .product-card .card-body { flex: 1; }
+        .product-card .card-title { font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+        .product-card .card-meta { color: var(--text-secondary); font-size: 0.9rem; }
+
         .table tr:hover {
           background: rgba(255,255,255,0.05);
         }
@@ -487,6 +506,11 @@ export default function InventarioView({ onBack }: InventarioViewProps) {
           .main-content { padding: 1rem; }
           .form-grid { grid-template-columns: 1fr; }
           .modal { margin: 1rem; padding: 1.5rem; }
+          /* En móvil ocultar tablas y mostrar cards */
+          .table { display: none; }
+          .table-container { box-shadow: none; }
+          .cards-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; width: 100%; }
+          .mobile-filters { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
         }
       `}</style>
 
@@ -521,11 +545,84 @@ export default function InventarioView({ onBack }: InventarioViewProps) {
             <div className="stat-value">L {totalValor.toFixed(2)}</div>
             <div className="stat-label">Valor Total</div>
           </div>
-        </div>
+          </div>
+          {/* Cards view para móviles: mostramos todos los productos filtrados por tipo */}
+          <div style={{ width: "100%", maxWidth: "1400px", margin: "0 auto", padding: "0 1rem" }}>
+            {/* Filtros visibles en móvil (aparecen justo antes de las cards) */}
+            <div className="mobile-filters">
+              <button
+                className="btn-table"
+                style={{ background: filtroTipo === "todos" ? "rgba(66,165,245,0.15)" : "transparent", color: "#42a5f5" }}
+                onClick={() => setFiltroTipo("todos")}
+              >
+                Todos
+              </button>
+              <button
+                className="btn-table"
+                style={{ background: filtroTipo === "comida" ? "rgba(46,125,50,0.15)" : "transparent", color: "#4caf50" }}
+                onClick={() => setFiltroTipo("comida")}
+              >
+                🍽️ Comida
+              </button>
+              <button
+                className="btn-table"
+                style={{ background: filtroTipo === "bebida" ? "rgba(255,152,0,0.12)" : "transparent", color: "#ff9800" }}
+                onClick={() => setFiltroTipo("bebida")}
+              >
+                🥤 Bebida
+              </button>
+            </div>
+            <div className="cards-grid">
+              {productos
+                .filter((p) => (filtroTipo === "todos" ? true : p.tipo === filtroTipo))
+                .map((p) => (
+                  <div className="product-card" key={p.id}>
+                    {p.imagen ? (
+                      <img src={p.imagen} alt={p.nombre} />
+                    ) : (
+                      <div style={{ width: 64, height: 64, background: "rgba(255,255,255,0.03)", borderRadius: 8 }} />
+                    )}
+                    <div className="card-body">
+                      <div className="card-title">{p.nombre} <span style={{ fontWeight: 600, marginLeft: 8, color: "var(--text-secondary)" }}>#{p.codigo}</span></div>
+                      <div className="card-meta">Precio: L {p.precio.toFixed(2)} · Impuesto: {p.tipo_impuesto === "venta" ? "15%" : "18%"}</div>
+                      <div className="card-meta">Subtotal: L {p.sub_total.toFixed(2)}</div>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <button className="btn-table btn-edit" onClick={() => handleEdit(p)}>Editar</button>
+                      <button className="btn-table btn-delete" onClick={() => handleDelete(p.id!)}>Eliminar</button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
 
         {/* Error */}
         {error && <div className="error">⚠️ {error}</div>}
 
+        {/* Filtro tipo (Todos / Comida / Bebida) */}
+        <div style={{ display: "flex", gap: 8, margin: "1rem 0", flexWrap: "wrap" }}>
+          <button
+            className="btn-table"
+            style={{ background: filtroTipo === "todos" ? "rgba(66,165,245,0.15)" : "transparent", color: "#42a5f5" }}
+            onClick={() => setFiltroTipo("todos")}
+          >
+            Todos
+          </button>
+          <button
+            className="btn-table"
+            style={{ background: filtroTipo === "comida" ? "rgba(46,125,50,0.15)" : "transparent", color: "#4caf50" }}
+            onClick={() => setFiltroTipo("comida")}
+          >
+            🍽️ Comida
+          </button>
+          <button
+            className="btn-table"
+            style={{ background: filtroTipo === "bebida" ? "rgba(255,152,0,0.12)" : "transparent", color: "#ff9800" }}
+            onClick={() => setFiltroTipo("bebida")}
+          >
+            🥤 Bebida
+          </button>
+        </div>
         {/* Tablas separadas */}
         {loading ? (
           <div className="loading">⏳ Cargando inventario...</div>
@@ -576,7 +673,7 @@ export default function InventarioView({ onBack }: InventarioViewProps) {
                   </thead>
                   <tbody>
                     {productos
-                      .filter((p) => p.tipo === "comida")
+                      .filter((p) => (filtroTipo === "todos" ? true : p.tipo === "comida"))
                       .map((p) => (
                         <tr key={p.id}>
                           <td>
@@ -653,7 +750,7 @@ export default function InventarioView({ onBack }: InventarioViewProps) {
                   </thead>
                   <tbody>
                     {productos
-                      .filter((p) => p.tipo === "bebida")
+                      .filter((p) => (filtroTipo === "todos" ? true : p.tipo === "bebida"))
                       .map((p) => (
                         <tr key={p.id}>
                           <td>

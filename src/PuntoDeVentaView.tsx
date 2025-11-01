@@ -96,10 +96,26 @@ export default function PuntoDeVentaView({
           .gte("fecha_hora", start)
           .lte("fecha_hora", end),
         // Obtener gastos del día: la tabla 'gastos' tiene columna DATE, usar igualdad por día
-        supabase
-          .from("gastos")
-          .select("monto")
-          .eq("fecha", day),
+        // Filtrar por cajero_id y caja asignada para que el resumen sea por este cajero/caja
+        (async () => {
+          // Determinar caja asignada
+          let cajaAsignada = caiInfo?.caja_asignada;
+          if (!cajaAsignada) {
+            const { data: caiData } = await supabase
+              .from("cai_facturas")
+              .select("caja_asignada")
+              .eq("cajero_id", usuarioActual?.id)
+              .single();
+            cajaAsignada = caiData?.caja_asignada || "";
+          }
+          if (!cajaAsignada) return Promise.resolve({ data: [] });
+          return supabase
+            .from("gastos")
+            .select("monto")
+            .eq("fecha", day)
+            .eq("cajero_id", usuarioActual?.id)
+            .eq("caja", cajaAsignada);
+        })(),
       ]);
 
       const efectivoSum = (pagosEfectivo || []).reduce(
@@ -461,11 +477,24 @@ export default function PuntoDeVentaView({
   const { day: fecha } = getLocalDayRange(); // devuelve 'YYYY-MM-DD' en hora local
       // Concatenar motivo y número de factura en la columna 'motivo'
       const motivoCompleto = gastoMotivo.trim() + (gastoFactura ? ` | Factura: ${gastoFactura.trim()}` : "");
+      // Determinar caja asignada (usar caiInfo o consultar si es necesario)
+      let cajaAsignada = caiInfo?.caja_asignada;
+      if (!cajaAsignada) {
+        const { data: caiData } = await supabase
+          .from("cai_facturas")
+          .select("caja_asignada")
+          .eq("cajero_id", usuarioActual?.id)
+          .single();
+        cajaAsignada = caiData?.caja_asignada || "";
+      }
+
       const { error } = await supabase.from("gastos").insert([
         {
           fecha,
           monto: montoNum,
           motivo: motivoCompleto,
+          cajero_id: usuarioActual?.id,
+          caja: cajaAsignada,
         },
       ]);
       if (error) {

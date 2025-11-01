@@ -307,6 +307,9 @@ const AdminPanel: FC<AdminPanelProps> = ({ onSelect, user }) => {
         color: white;
         flex-shrink: 0;
       }
+
+  /* Brand image: tamaño más pequeño por defecto, y más pequeño aún en móvil (avatar redondo) */
+  .brand-image { width: 160px; height: 60px; border-radius: 8px; object-fit: cover; }
       
       .card-content h3 {
         margin: 0 0 0.5rem 0;
@@ -372,13 +375,20 @@ const AdminPanel: FC<AdminPanelProps> = ({ onSelect, user }) => {
         .logo { justify-content: center; }
         .user-info { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 12px; }
         .user-details { text-align: left; }
-        .cards-grid { grid-template-columns: 1fr; gap: 1rem; }
+        .cards-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
         .card { padding: 1rem; }
         .card-header { gap: 12px; }
         .card-icon { width: 48px; height: 48px; font-size: 1.4rem; }
         .card-content h3 { font-size: 1.05rem; }
         .card-subtitle { font-size: 0.85rem; }
         .card-footer { justify-content: center; }
+        /* hide header buttons and show floating ones */
+        .user-info .btn-primary { display: none !important; }
+        .floating-controls { display: flex !important; position: fixed; right: 16px; bottom: 18px; flex-direction: column; gap: 10px; z-index: 2000; }
+        .floating-btn { width: 52px; height: 52px; border-radius: 999px; border: none; display: inline-flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 8px 20px rgba(7,23,48,0.12); cursor: pointer; }
+        .floating-btn.logout { background: linear-gradient(135deg, #c62828, #ffb74d); color: #1a1a2e; }
+        .floating-btn.clave { background: #1976d2; color: #fff; }
+  .brand-image { width: 44px !important; height: 44px !important; border-radius: 999px !important; object-fit: cover; }
       }
 
       @media (max-width: 420px) {
@@ -405,9 +415,8 @@ const AdminPanel: FC<AdminPanelProps> = ({ onSelect, user }) => {
               <img
                 src="https://i.imgur.com/4M9UCRM.jpeg"
                 alt="Logo"
+                className="brand-image"
                 style={{
-                  width: 418,
-                  height: 158,
                   borderRadius: 12,
                   objectFit: "cover",
                 }}
@@ -513,6 +522,29 @@ const AdminPanel: FC<AdminPanelProps> = ({ onSelect, user }) => {
           </div>
         </div>
       </header>
+
+      {/* Botones flotantes para móvil */}
+      <div className="floating-controls" style={{ display: "none" }}>
+        <button className="floating-btn logout" onClick={() => setShowLogoutModal(true)}>🔒</button>
+        <button className="floating-btn clave" onClick={async () => {
+          setShowClaveModal(true);
+          setCargandoClave(true);
+          try {
+            const { data, error } = await supabase
+              .from("claves_autorizacion")
+              .select("clave")
+              .eq("id", 1)
+              .single();
+            if (!error && data) setClaveCaja(String(data.clave));
+            else setClaveCaja(null);
+          } catch (err) {
+            console.error("Error obteniendo clave:", err);
+            setClaveCaja(null);
+          } finally {
+            setCargandoClave(false);
+          }
+        }}>🔐</button>
+      </div>
 
       <main className="main-content">
         <div className="welcome-section">

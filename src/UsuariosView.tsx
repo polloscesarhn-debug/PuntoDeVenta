@@ -190,32 +190,8 @@ export default function UsuariosView({ onBack }: UsuariosViewProps) {
     setLoading(false);
   };
 
-  const handleDelete = async (id: string) => {
-    const usuario = usuarios.find((u) => u.id === id);
-    if (usuario?.rol === "admin") {
-      setError("No se puede eliminar el usuario administrador.");
-      return;
-    }
-    if (!window.confirm("¿Eliminar usuario permanentemente?")) return;
-    setLoading(true);
-    try {
-      await fetch(`${API_URL}?id=eq.${id}`, {
-        method: "DELETE",
-        headers: {
-          apikey: API_KEY,
-          Authorization: `Bearer ${API_KEY}`,
-        },
-      });
-      // Recargar datos
-      const res = await fetch(API_URL + "?select=*", {
-        headers: { apikey: API_KEY, Authorization: `Bearer ${API_KEY}` },
-      });
-      setUsuarios(await res.json());
-    } catch {
-      setError("Error al eliminar usuario");
-    }
-    setLoading(false);
-  };
+  // Eliminada la función de eliminación para prohibir borrar usuarios desde la UI;
+  // solo se permite actualizar/editar usuarios.
 
   const handleEdit = (usuario: Usuario) => {
     setEditId(usuario.id);
@@ -478,6 +454,14 @@ export default function UsuariosView({ onBack }: UsuariosViewProps) {
           color: var(--text-secondary);
         }
 
+        /* Cards para móvil (ocultas por defecto) */
+        .cards-grid { display: none; }
+        .user-card { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: flex; gap: 12px; align-items: center; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
+        .user-avatar-sm { width: 56px; height: 56px; border-radius: 999px; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; background:linear-gradient(135deg,#1e88e5,#42a5f5); flex-shrink:0; }
+        .user-body { flex:1; min-width:0; }
+        .user-name { font-weight:700; color:var(--text-primary); margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .user-meta { color:var(--text-secondary); font-size:13px; }
+
         .error {
           background: rgba(198,40,40,0.1);
           color: #c62828;
@@ -497,6 +481,10 @@ export default function UsuariosView({ onBack }: UsuariosViewProps) {
           .header { padding: 1rem; flex-direction: column; gap: 1rem; }
           .main-content { padding: 1rem; }
           .form-grid { grid-template-columns: 1fr; }
+          /* Mostrar cards y ocultar tabla en móvil */
+          .table { display: none; }
+          .table-container { box-shadow: none; }
+          .cards-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
         }
       `}</style>
 
@@ -597,19 +585,29 @@ export default function UsuariosView({ onBack }: UsuariosViewProps) {
                           Actualizar
                         </button>
                       )}
-                      {u.rol !== "Admin" && (
-                        <button
-                          className="btn-table btn-delete"
-                          onClick={() => handleDelete(u.id)}
-                        >
-                          Eliminar
-                        </button>
-                      )}
+                      {/* Eliminado botón de eliminar: sólo se permite editar/actualizar */}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            {/* Cards view para móviles (oculto en escritorio) */}
+            <div className="cards-grid" style={{ marginTop: 8 }}>
+              {usuarios.map((u) => (
+                <div className="user-card" key={u.id}>
+                  <div className="user-avatar-sm">{u.nombre?.charAt(0)?.toUpperCase()}</div>
+                  <div className="user-body">
+                    <div className="user-name">{u.nombre} <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>#{u.codigo}</span></div>
+                    <div className="user-meta">{u.rol} · Caja: {u.caja || '-' } · IP: {u.ip || '-'}</div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {u.rol !== 'Admin' && <button className="btn-table btn-edit" onClick={() => handleEdit(u)}>Editar</button>}
+                    {u.rol === 'Admin' && <button className="btn-table btn-update" onClick={() => handleAdminUpdate(u)} style={{ background: '#1976d2', color: '#fff' }}>Actualizar</button>}
+                    {/* Eliminado botón de eliminar en vista móvil */}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

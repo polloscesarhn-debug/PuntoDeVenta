@@ -1,7 +1,7 @@
 import { useState } from "react";
 import FondoImagen from "./FondoImagen";
 import { supabase } from "./supabaseClient";
-import { getLocalDayRange } from "./utils/fechas";
+import { getLocalDayRange, formatToHondurasLocal } from "./utils/fechas";
 
 interface AperturaViewProps {
   usuarioActual: { id: string; nombre: string } | null;
@@ -18,54 +18,17 @@ export default function AperturaView({
   const [error, setError] = useState("");
 
   const registrarApertura = async () => {
-    setLoading(true);
-    setError("");
-    if (!caja || caja === "" || caja === null || caja === undefined) {
-      setError(
-        'No tienes caja asiganda. Contacte al administrador.'
-      );
-      setLoading(false);
-      return;
-    }
-    const { start, end } = getLocalDayRange();
-    // Verificar si ya hay apertura hoy
-    const { data: aperturas } = await supabase
-      .from("cierres")
-      .select("*")
-      .eq("tipo_registro", "apertura")
-      .eq("cajero", usuarioActual?.nombre)
-      .eq("caja", caja)
-      .gte("fecha", start)
-      .lte("fecha", end);
-    if (aperturas && aperturas.length > 0) {
-      window.location.href = "/punto-de-venta";
-      setLoading(false);
-      return;
-    }
-    // Registrar apertura
-    const { error: insertError } = await supabase.from("cierres").insert([
-      {
-        tipo_registro: "apertura",
-        cajero: usuarioActual?.nombre,
-        cajero_id: usuarioActual?.id,
-        caja,
-        fondo_fijo_registrado: parseFloat(fondoFijo),
-        fondo_fijo: 0,
-        efectivo_registrado: 0,
-        efectivo_dia: 0,
-        monto_tarjeta_registrado: 0,
-        monto_tarjeta_dia: 0,
-        transferencias_registradas: 0,
-        transferencias_dia: 0,
-        diferencia: 0,
-      },
-    ]);
-    setLoading(false);
-    if (insertError) {
-      setError(insertError.message);
-    } else {
-      // Verificar de nuevo y redirigir
-      const { data: aperturas2 } = await supabase
+    try {
+      setLoading(true);
+      setError("");
+      if (!caja || caja === "" || caja === null || caja === undefined) {
+        setError('No tienes caja asiganda. Contacte al administrador.');
+        setLoading(false);
+        return;
+      }
+      const { start, end } = getLocalDayRange();
+      // Verificar si ya hay apertura hoy
+      const { data: aperturas, error: queryErr } = await supabase
         .from("cierres")
         .select("*")
         .eq("tipo_registro", "apertura")
@@ -73,9 +36,61 @@ export default function AperturaView({
         .eq("caja", caja)
         .gte("fecha", start)
         .lte("fecha", end);
-      if (aperturas2 && aperturas2.length > 0) {
-        window.location.href = "/punto-de-venta";
+      if (queryErr) {
+        console.error("Error consultando aperturas:", queryErr);
+        setError(queryErr.message || "Error consultando aperturas");
+        setLoading(false);
+        return;
       }
+      if (aperturas && aperturas.length > 0) {
+        window.location.href = "/punto-de-venta";
+        setLoading(false);
+        return;
+      }
+      // Registrar apertura (incluimos fecha en hora local de Honduras)
+      const { error: insertError } = await supabase.from("cierres").insert([
+        {
+          tipo_registro: "apertura",
+          cajero: usuarioActual?.nombre,
+          cajero_id: usuarioActual?.id,
+          caja,
+          fecha: formatToHondurasLocal(),
+          fondo_fijo_registrado: parseFloat(fondoFijo),
+          fondo_fijo: 0,
+          efectivo_registrado: 0,
+          efectivo_dia: 0,
+          monto_tarjeta_registrado: 0,
+          monto_tarjeta_dia: 0,
+          transferencias_registradas: 0,
+          transferencias_dia: 0,
+          diferencia: 0,
+        },
+      ]);
+      setLoading(false);
+      if (insertError) {
+        console.error("Error insertando apertura:", insertError);
+        setError(insertError.message || "Error al registrar apertura");
+      } else {
+        // Verificar de nuevo y redirigir
+        const { data: aperturas2, error: q2Err } = await supabase
+          .from("cierres")
+          .select("*")
+          .eq("tipo_registro", "apertura")
+          .eq("cajero", usuarioActual?.nombre)
+          .eq("caja", caja)
+          .gte("fecha", start)
+          .lte("fecha", end);
+        if (q2Err) {
+          console.error("Error consultando aperturas después de insertar:", q2Err);
+        }
+        if (aperturas2 && aperturas2.length > 0) {
+          window.location.href = "/punto-de-venta";
+        }
+      }
+    } catch (e: any) {
+      console.error("Excepción en registrarApertura:", e);
+      setError(e?.message || String(e));
+      setLoading(false);
     }
   };
 

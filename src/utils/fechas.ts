@@ -23,3 +23,25 @@ export function getLocalDayRange(date?: Date) {
     day,
   };
 }
+
+// Formatea una fecha en la zona de Honduras (America/Tegucigalpa)
+// y devuelve 'YYYY-MM-DD HH:MM:SS' (hora local de Honduras).
+export function formatToHondurasLocal(date?: Date) {
+  const d = date ? new Date(date) : new Date();
+  const fmt = new Intl.DateTimeFormat('sv', {
+    timeZone: 'America/Tegucigalpa',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+  const parts = fmt.formatToParts(d).reduce((acc: any, p: any) => {
+    if (p.type !== 'literal') acc[p.type] = p.value;
+    return acc;
+  }, {});
+  // parts: { year, month, day, hour, minute, second }
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
+}

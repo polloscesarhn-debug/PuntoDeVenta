@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabaseClient";
-import { getLocalDayRange } from "./utils/fechas";
+import { getLocalDayRange, formatToHondurasLocal } from "./utils/fechas";
 
 interface UsuarioActual {
   nombre: string;
@@ -106,9 +106,15 @@ export default function RegistroCierreView({
     console.debug("efectivoDia computed:", efectivoDia);
 
     // Obtener gastos del día (la tabla 'gastos' usa columna DATE)
+    // Filtrar por cajero_id y caja para que solo se sumen los gastos de este cajero/caja
     let gastosDia = 0;
     try {
-      const { data: gastosData } = await supabase.from("gastos").select("monto").eq("fecha", day);
+      const { data: gastosData } = await supabase
+        .from("gastos")
+        .select("monto")
+        .eq("fecha", day)
+        .eq("cajero_id", usuarioActual?.id)
+        .eq("caja", caja);
       if (gastosData && Array.isArray(gastosData)) {
         gastosDia = gastosData.reduce((s: number, g: any) => s + parseFloat(g.monto || 0), 0);
       }
@@ -237,7 +243,8 @@ export default function RegistroCierreView({
           cajero: usuarioActual?.nombre,
           cajero_id: usuarioActual && usuarioActual.id ? usuarioActual.id : "SIN_ID",
           caja,
-          fecha: new Date().toISOString(),
+          // Guardar la fecha/hora en hora local de Honduras
+          fecha: formatToHondurasLocal(),
           fondo_fijo_registrado: parseFloat(fondoFijo),
           fondo_fijo: fondoFijoDia,
           efectivo_registrado: 0,
@@ -256,7 +263,8 @@ export default function RegistroCierreView({
           cajero: usuarioActual?.nombre,
           cajero_id: usuarioActual && usuarioActual.id ? usuarioActual.id : "SIN_ID",
           caja,
-          fecha: new Date().toISOString(),
+          // Guardar la fecha/hora en hora local de Honduras
+          fecha: formatToHondurasLocal(),
           fondo_fijo_registrado: parseFloat(fondoFijo),
           fondo_fijo: fondoFijoDia,
           efectivo_registrado: parseFloat(efectivo),
