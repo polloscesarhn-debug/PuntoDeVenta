@@ -22,7 +22,7 @@ interface Seleccion {
 }
 
 // use centralized supabase client from src/supabaseClient.ts
-
+// use centralized supabase client from src/supabaseClient.ts
 // Obtener usuario actual de localStorage
 const usuarioActual = (() => {
   try {
@@ -59,6 +59,7 @@ export default function PuntoDeVentaView({
     efectivo: number;
     tarjeta: number;
     transferencia: number;
+    gastos: number;
   } | null>(null);
 
   // Función para obtener resumen de caja del día (EFECTIVO/TARJETA/TRANSFERENCIA)
@@ -66,11 +67,12 @@ export default function PuntoDeVentaView({
     setShowResumen(true);
     setResumenLoading(true);
     try {
-      const { start, end } = getLocalDayRange();
+      const { start, end, day } = getLocalDayRange();
       const [
         { data: pagosEfectivo },
         { data: pagosTarjeta },
         { data: pagosTrans },
+        { data: gastosDia },
       ] = await Promise.all([
         supabase
           .from("pagos")
@@ -93,6 +95,11 @@ export default function PuntoDeVentaView({
           .eq("cajero_id", usuarioActual?.id)
           .gte("fecha_hora", start)
           .lte("fecha_hora", end),
+        // Obtener gastos del día: la tabla 'gastos' tiene columna DATE, usar igualdad por día
+        supabase
+          .from("gastos")
+          .select("monto")
+          .eq("fecha", day),
       ]);
 
       const efectivoSum = (pagosEfectivo || []).reduce(
@@ -108,10 +115,15 @@ export default function PuntoDeVentaView({
         0
       );
 
-      setResumenData({ efectivo: efectivoSum, tarjeta: tarjetaSum, transferencia: transSum });
+      const gastosSum = (gastosDia || []).reduce(
+        (s: number, g: any) => s + parseFloat(g.monto || 0),
+        0
+      );
+
+  setResumenData({ efectivo: efectivoSum, tarjeta: tarjetaSum, transferencia: transSum, gastos: gastosSum });
     } catch (err) {
       console.error("Error al obtener resumen de caja:", err);
-      setResumenData({ efectivo: 0, tarjeta: 0, transferencia: 0 });
+      setResumenData({ efectivo: 0, tarjeta: 0, transferencia: 0, gastos: 0 });
     } finally {
       setResumenLoading(false);
     }
@@ -128,6 +140,21 @@ export default function PuntoDeVentaView({
   const [showPagoModal, setShowPagoModal] = useState(false);
   const [showClienteModal, setShowClienteModal] = useState(false);
   const [showNoConnectionModal, setShowNoConnectionModal] = useState(false);
+  // Modal para registrar gasto
+  const [showRegistrarGasto, setShowRegistrarGasto] = useState(false);
+  const [gastoMonto, setGastoMonto] = useState<string>("");
+  const [gastoMotivo, setGastoMotivo] = useState<string>("");
+  const [gastoFactura, setGastoFactura] = useState<string>("");
+  const [guardandoGasto, setGuardandoGasto] = useState(false);
+  // Helper para cerrar y resetear el formulario de gasto
+  const cerrarRegistrarGasto = () => {
+    setShowRegistrarGasto(false);
+    setGastoMonto("");
+    setGastoMotivo("");
+    setGastoFactura("");
+  };
+  const [showGastoSuccess, setShowGastoSuccess] = useState(false);
+  const [gastoSuccessMessage, setGastoSuccessMessage] = useState<string>("");
   const [checkingFactura, setCheckingFactura] = useState(false);
   // Eliminado showFacturaModal
   const [nombreCliente, setNombreCliente] = useState("");
@@ -416,6 +443,50 @@ export default function PuntoDeVentaView({
     localStorage.removeItem("seleccionados");
   };
 
+  // Guardar gasto en la tabla 'gastos'
+  const guardarGasto = async () => {
+    // Validaciones básicas
+    const montoNum = parseFloat(gastoMonto);
+    if (isNaN(montoNum) || montoNum <= 0) {
+      alert("Ingrese un monto válido mayor que 0");
+      return;
+    }
+    if (!gastoMotivo.trim()) {
+      alert("Ingrese el motivo del gasto");
+      return;
+    }
+    setGuardandoGasto(true);
+    try {
+  // Usar la fecha local (YYYY-MM-DD) para evitar conversión a UTC
+  const { day: fecha } = getLocalDayRange(); // devuelve 'YYYY-MM-DD' en hora local
+      // Concatenar motivo y número de factura en la columna 'motivo'
+      const motivoCompleto = gastoMotivo.trim() + (gastoFactura ? ` | Factura: ${gastoFactura.trim()}` : "");
+      const { error } = await supabase.from("gastos").insert([
+        {
+          fecha,
+          monto: montoNum,
+          motivo: motivoCompleto,
+        },
+      ]);
+      if (error) {
+        console.error("Error guardando gasto:", error);
+        alert("Error al guardar gasto. Revisa la consola.");
+      } else {
+        // éxito: cerrar y resetear modal de formulario y mostrar modal de éxito
+        cerrarRegistrarGasto();
+        setGastoSuccessMessage("Gasto registrado correctamente");
+        setShowGastoSuccess(true);
+        // opcional: navegar a la vista de gastos si se desea
+        // if (setView) setView("gastos");
+      }
+    } catch (err) {
+      console.error("Error guardando gasto:", err);
+      alert("Error al guardar gasto. Revisa la consola.");
+    } finally {
+      setGuardandoGasto(false);
+    }
+  };
+
   // Calculate total
   const total = seleccionados.reduce(
     (sum, p) => sum + p.precio * p.cantidad,
@@ -532,13 +603,16 @@ export default function PuntoDeVentaView({
             ) : resumenData ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <div>
-                  <strong>EFECTIVO:</strong> {resumenData.efectivo.toFixed(2)}
+                  <strong>EFECTIVO:</strong> {(resumenData.efectivo - resumenData.gastos).toFixed(2)}
                 </div>
                 <div>
                   <strong>TARJETA:</strong> {resumenData.tarjeta.toFixed(2)}
                 </div>
                 <div>
                   <strong>TRANSFERENCIA:</strong> {resumenData.transferencia.toFixed(2)}
+                </div>
+                <div>
+                  <strong>GASTOS:</strong> {resumenData.gastos.toFixed(2)}
                 </div>
               </div>
             ) : (
@@ -692,6 +766,30 @@ export default function PuntoDeVentaView({
             onClick={() => fetchResumenCaja()}
           >
             Resumen de caja
+          </button>
+        </div>
+
+        {/* Botón Registrar gasto debajo del Resumen de caja: abre modal */}
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 8 }}>
+          <button
+            onClick={() => {
+              // Abrir modal de gasto sin prellenar número de factura (entrada manual)
+              cerrarRegistrarGasto();
+              setShowRegistrarGasto(true);
+            }}
+            style={{
+              fontSize: 16,
+              padding: "10px 22px",
+              borderRadius: 8,
+              background: theme === "lite" ? "rgba(211,47,47,0.95)" : "rgba(183,28,28,0.95)",
+              color: "#fff",
+              fontWeight: 700,
+              border: "none",
+              cursor: "pointer",
+              opacity: 0.95,
+            }}
+          >
+            Registrar gasto
           </button>
         </div>
 
@@ -1574,6 +1672,122 @@ export default function PuntoDeVentaView({
                 }}
               >
                 Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Registrar Gasto */}
+      {showRegistrarGasto && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0,0,0,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 120000,
+          }}
+            onClick={() => cerrarRegistrarGasto()}
+        >
+          <div
+            style={{
+              background: theme === "lite" ? "#fff" : "#232526",
+              borderRadius: 12,
+              padding: 20,
+              minWidth: 320,
+              boxShadow: "0 8px 32px #0003",
+              color: theme === "lite" ? "#222" : "#f5f5f5",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ marginTop: 0, color: "#d32f2f" }}>Registrar gasto</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="Monto"
+                value={gastoMonto}
+                onChange={(e) => setGastoMonto(e.target.value)}
+                style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
+              />
+              <input
+                type="text"
+                placeholder="Motivo"
+                value={gastoMotivo}
+                onChange={(e) => setGastoMotivo(e.target.value)}
+                style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
+              />
+              <input
+                type="text"
+                placeholder="Número de factura (opcional)"
+                value={gastoFactura}
+                onChange={(e) => setGastoFactura(e.target.value)}
+                style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
+              />
+            </div>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 16 }}>
+              <button
+                onClick={() => cerrarRegistrarGasto()}
+                style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#9e9e9e", color: "#fff", cursor: "pointer" }}
+                disabled={guardandoGasto}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => guardarGasto()}
+                style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#d32f2f", color: "#fff", cursor: "pointer", fontWeight: 700 }}
+                disabled={guardandoGasto}
+              >
+                {guardandoGasto ? "Guardando..." : "Guardar gasto"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de éxito tras registrar gasto */}
+      {showGastoSuccess && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0,0,0,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 130000,
+          }}
+          onClick={() => setShowGastoSuccess(false)}
+        >
+          <div
+            style={{
+              background: theme === "lite" ? "#fff" : "#232526",
+              borderRadius: 12,
+              padding: 20,
+              minWidth: 300,
+              boxShadow: "0 8px 32px #0003",
+              color: theme === "lite" ? "#222" : "#f5f5f5",
+              textAlign: "center",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ marginTop: 0, color: "#388e3c" }}>Éxito</h3>
+            <p style={{ marginTop: 8 }}>{gastoSuccessMessage}</p>
+            <div style={{ display: "flex", justifyContent: "center", marginTop: 16 }}>
+              <button
+                onClick={() => setShowGastoSuccess(false)}
+                style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#1976d2", color: "#fff", cursor: "pointer" }}
+              >
+                Aceptar
               </button>
             </div>
           </div>

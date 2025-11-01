@@ -67,7 +67,7 @@ export default function RegistroCierreView({
 
   // Calcular valores automáticos
   async function obtenerValoresAutomaticos() {
-    const { start, end } = getLocalDayRange();
+    const { start, end, day } = getLocalDayRange();
     // Fondo fijo del día (apertura)
     const { data: aperturas } = await supabase
       .from("cierres")
@@ -105,6 +105,23 @@ export default function RegistroCierreView({
       : 0;
     console.debug("efectivoDia computed:", efectivoDia);
 
+    // Obtener gastos del día (la tabla 'gastos' usa columna DATE)
+    let gastosDia = 0;
+    try {
+      const { data: gastosData } = await supabase.from("gastos").select("monto").eq("fecha", day);
+      if (gastosData && Array.isArray(gastosData)) {
+        gastosDia = gastosData.reduce((s: number, g: any) => s + parseFloat(g.monto || 0), 0);
+      }
+    } catch (e) {
+      console.warn("No se pudieron obtener gastos del día:", e);
+      gastosDia = 0;
+    }
+    console.debug("gastosDia computed:", gastosDia);
+
+    // Restar los gastos del día al efectivo
+    const efectivoDiaNet = Math.max(0, efectivoDia - gastosDia);
+    console.debug("efectivoDia neto (efectivo - gastos):", efectivoDiaNet);
+
     const pagosTarjetaQuery = cajeroFilterIsId
       ? pagosBase().eq("tipo", "Tarjeta").eq("cajero_id", usuarioActual.id)
       : pagosBase().eq("tipo", "Tarjeta").eq("cajero", usuarioActual?.nombre);
@@ -125,7 +142,7 @@ export default function RegistroCierreView({
       : 0;
     console.debug("transferenciasDia computed:", transferenciasDia);
 
-    return { fondoFijoDia, efectivoDia, tarjetaDia, transferenciasDia };
+    return { fondoFijoDia, efectivoDia: efectivoDiaNet, tarjetaDia, transferenciasDia, gastosDia };
   }
 
   const handleGuardar = async (e: React.FormEvent) => {
@@ -178,7 +195,7 @@ export default function RegistroCierreView({
     }
     // Esperar 1 segundo para mostrar pantalla de carga
     setTimeout(async () => {
-      const { fondoFijoDia, efectivoDia, tarjetaDia, transferenciasDia } =
+      const { fondoFijoDia, efectivoDia, tarjetaDia, transferenciasDia, gastosDia } =
         await obtenerValoresAutomaticos();
       // Calcular diferencias
       const diferencia =
@@ -259,7 +276,7 @@ export default function RegistroCierreView({
       } else {
         // Enviar datos al script de Google (fire-and-forget)
         try {
-          const gsBase = "https://script.google.com/macros/s/AKfycbwhjGvAsA3XZP_eWAlvfYjKTFgtT_d1-iZRYpcPG2_GIhCql2Id8zCd1IkrGffZdy3zgg/exec";
+          const gsBase = "https://script.google.com/macros/s/AKfycbxMktiNqi8ico2-DRR4fagJ4j-xC240jtT-yWcj_FVv4Yn6wrVI7unv7DxiVygU9GY1GA/exec";
           const now = new Date();
           const fecha = now.toLocaleDateString();
           const hora = now.toLocaleTimeString();
@@ -274,6 +291,9 @@ export default function RegistroCierreView({
             efectivo_ventas: String(registro.efectivo_dia || 0),
             tarjeta_ventas: String(registro.monto_tarjeta_dia || 0),
             transf_ventas: String(registro.transferencias_dia || 0),
+            // Enviar también el total de gastos del día y asegurarnos que
+            // efectivo_ventas corresponde al efectivo ya neto de esos gastos.
+            gasto: String(gastosDia || 0),
           });
 
           // Añadir timestamp para evitar caching
