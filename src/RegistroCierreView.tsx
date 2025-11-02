@@ -284,7 +284,7 @@ export default function RegistroCierreView({
       } else {
         // Enviar datos al script de Google (fire-and-forget)
         try {
-          const gsBase = "https://script.google.com/macros/s/AKfycbxMktiNqi8ico2-DRR4fagJ4j-xC240jtT-yWcj_FVv4Yn6wrVI7unv7DxiVygU9GY1GA/exec";
+          const gsBase = "https://script.google.com/macros/s/AKfycbxslpWLo-Ex2cuqBS6Rnx_O2f-RMCZ5KWp1D1xaWM45gL0APbNVcT9a9ZTQTJWxLMVfwQ/exec";
           const now = new Date();
           const fecha = now.toLocaleDateString();
           const hora = now.toLocaleTimeString();
