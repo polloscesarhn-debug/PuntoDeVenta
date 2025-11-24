@@ -1503,101 +1503,110 @@ export default function PuntoDeVentaView({
               No hay productos seleccionados
             </p>
           ) : (
-            <ul
-              style={{
-                listStyle: "none",
-                padding: 0,
-                flex: 1,
-                overflowY: "auto",
-                marginBottom: 16,
-              }}
-            >
-              {seleccionados.map((p) => (
-                <li
-                  key={p.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: 8,
-                    background: theme === "lite" ? "#fff" : "#333",
-                    borderRadius: 8,
-                    padding: "8px 12px",
-                    boxShadow:
-                      theme === "lite"
-                        ? "0 1px 4px rgba(0,0,0,0.05)"
-                        : "0 1px 4px #0008",
-                    color: theme === "lite" ? "#222" : "#f5f5f5",
-                  }}
-                >
-                  <span
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <div style={{
+                display: 'flex',
+                padding: '10px 12px',
+                background: theme === 'lite' ? '#f5f5f5' : '#424242',
+                borderRadius: '8px 8px 0 0',
+                fontWeight: 'bold',
+                fontSize: 13,
+                color: theme === 'lite' ? '#666' : '#aaa',
+                marginBottom: 0,
+                borderBottom: theme === 'lite' ? '1px solid #e0e0e0' : '1px solid #555'
+              }}>
+                <div style={{ flex: 2 }}>Producto</div>
+                <div style={{ flex: 1, textAlign: 'center' }}>Precio</div>
+                <div style={{ flex: 1, textAlign: 'center' }}>Cant.</div>
+                <div style={{ flex: 1, textAlign: 'right', paddingRight: 8 }}>Total</div>
+                <div style={{ width: 70, textAlign: 'center' }}></div>
+              </div>
+              <ul
+                style={{
+                  listStyle: "none",
+                  padding: 0,
+                  margin: 0,
+                  flex: 1,
+                  overflowY: "auto",
+                  background: theme === 'lite' ? '#fff' : '#333',
+                  borderRadius: '0 0 8px 8px',
+                  border: theme === 'lite' ? '1px solid #e0e0e0' : '1px solid #444',
+                  borderTop: 'none'
+                }}
+              >
+                {seleccionados.map((p, index) => (
+                  <li
+                    key={p.id}
                     style={{
-                      flex: 2,
-                      fontSize: 15,
-                      fontWeight: 700,
-                      color: "#1976d2",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "10px 12px",
+                      borderBottom: theme === 'lite' ? '1px solid #f0f0f0' : '1px solid #444',
+                      background: index % 2 === 0 ? (theme === 'lite' ? '#fff' : '#333') : (theme === 'lite' ? '#fafafa' : '#383838'),
+                      color: theme === "lite" ? "#222" : "#f5f5f5",
                     }}
                   >
-                    {p.nombre}
-                  </span>
-                  <span
-                    style={{
-                      flex: 1,
-                      fontSize: 14,
-                      color: "#333",
-                      textAlign: "center",
-                    }}
-                  >
-                    L {p.precio.toFixed(2)}
-                  </span>
-                  <span
-                    style={{
-                      flex: 1,
-                      fontSize: 14,
-                      color: "#388e3c",
-                      textAlign: "center",
-                    }}
-                  >
-                    x{p.cantidad}
-                  </span>
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>
-                    L {(p.precio * p.cantidad).toFixed(2)}
-                  </span>
-                  <div style={{ display: "flex", gap: 4, marginLeft: 8 }}>
-                    <button
-                      onClick={() =>
-                        agregarProducto(
-                          productos.find((prod) => prod.id === p.id)!
-                        )
-                      }
-                      style={{
-                        background: "#388e3c",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: 4,
-                        padding: "4px 8px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      +
-                    </button>
-                    <button
-                      onClick={() => eliminarProducto(p.id)}
-                      style={{
-                        background: "#d32f2f",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: 4,
-                        padding: "4px 8px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      −
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                    <div style={{ flex: 2, fontWeight: 600, fontSize: 14, color: theme === 'lite' ? '#1976d2' : '#64b5f6' }}>
+                      {p.nombre}
+                    </div>
+                    <div style={{ flex: 1, textAlign: 'center', fontSize: 13 }}>
+                      L {p.precio.toFixed(2)}
+                    </div>
+                    <div style={{ flex: 1, textAlign: 'center', fontSize: 13, color: theme === 'lite' ? '#388e3c' : '#81c784', fontWeight: 600 }}>
+                      x{p.cantidad}
+                    </div>
+                    <div style={{ flex: 1, textAlign: 'right', fontWeight: 700, fontSize: 14, paddingRight: 8 }}>
+                      L {(p.precio * p.cantidad).toFixed(2)}
+                    </div>
+                    <div style={{ width: 70, display: "flex", gap: 4, justifyContent: "flex-end" }}>
+                      <button
+                        onClick={() =>
+                          agregarProducto(
+                            productos.find((prod) => prod.id === p.id)!
+                          )
+                        }
+                        style={{
+                          background: "#388e3c",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: 4,
+                          width: 24,
+                          height: 24,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: "pointer",
+                          fontSize: 16,
+                          lineHeight: 1
+                        }}
+                      >
+                        +
+                      </button>
+                      <button
+                        onClick={() => eliminarProducto(p.id)}
+                        style={{
+                          background: "#d32f2f",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: 4,
+                          width: 24,
+                          height: 24,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: "pointer",
+                          fontSize: 16,
+                          lineHeight: 1
+                        }}
+                      >
+                        −
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
           <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
             <button
@@ -2258,240 +2267,301 @@ export default function PuntoDeVentaView({
               ) : pedidosList.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: 24 }}>No hay pedidos.</div>
               ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ textAlign: 'left', borderBottom: '1px solid #ddd' }}>
-                      <th style={{ padding: '8px 6px' }}>Fecha</th>
-                      <th style={{ padding: '8px 6px' }}>Cliente</th>
-                      <th style={{ padding: '8px 6px' }}>Teléfono</th>
-                      <th style={{ padding: '8px 6px' }}>Total</th>
-                      <th style={{ padding: '8px 6px' }}>Envío</th>
-                      <th style={{ padding: '8px 6px' }}>Pago</th>
-                      <th style={{ padding: '8px 6px', textAlign: 'center' }}>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pedidosList.map((p: any) => (
-                      <tr key={p.id} style={{ borderBottom: '1px solid #f1f1f1' }}>
-                        <td style={{ padding: '8px 6px', maxWidth: 140 }}>{p.fecha}</td>
-                        <td style={{ padding: '8px 6px' }}>{p.cliente}</td>
-                        <td style={{ padding: '8px 6px' }}>{p.celular}</td>
-                        <td style={{ padding: '8px 6px' }}>L {Number(p.total || 0).toFixed(2)}</td>
-                        <td style={{ padding: '8px 6px' }}>L {Number(p.costo_envio || 0).toFixed(2)}</td>
-                        <td style={{ padding: '8px 6px' }}>{p.tipo_pago}</td>
-                        <td style={{ padding: '8px 6px', textAlign: 'center' }}>
-                          <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-                            <button
-                              onClick={async () => {
-                                if (!confirm('¿Eliminar pedido?')) return;
-                                setPedidosProcessingId(p.id);
-                                try {
-                                  const { error } = await supabase.from('pedidos_envio').delete().eq('id', p.id);
-                                  if (error) throw error;
-                                  setPedidosList((prev) => prev.filter((x) => x.id !== p.id));
-                                } catch (err) {
-                                  console.error('Error eliminando pedido:', err);
-                                  alert('Error eliminando pedido');
-                                } finally {
-                                  setPedidosProcessingId(null);
-                                }
-                              }}
-                              disabled={pedidosProcessingId === p.id}
-                              style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '8px 10px', borderRadius: 8, cursor: 'pointer' }}
-                            >
-                              {pedidosProcessingId === p.id ? '...' : 'Eliminar'}
-                            </button>
-                            <button
-                              onClick={async () => {
-                                if (facturaActual === 'Límite alcanzado') { alert('Límite de facturas alcanzado'); return; }
-                                if (!confirm('Marcar como entregado y registrar cobro?')) return;
-                                setPedidosProcessingId(p.id);
-                                try {
-                                  const productos = (p.productos || []).map((pp: any) => ({ id: pp.id, nombre: pp.nombre, precio: pp.precio, cantidad: pp.cantidad, tipo: pp.tipo || 'comida' }));
-                                  const subTotal = productos.reduce((sum: number, item: any) => {
-                                    if (item.tipo === 'comida') return sum + (item.precio / 1.15) * item.cantidad;
-                                    if (item.tipo === 'bebida') return sum + (item.precio / 1.18) * item.cantidad;
-                                    return sum + item.precio * item.cantidad;
-                                  }, 0);
-                                  const isv15 = productos.filter((it: any) => it.tipo === 'comida').reduce((s: number, it: any) => s + (it.precio - it.precio / 1.15) * it.cantidad, 0);
-                                  const isv18 = productos.filter((it: any) => it.tipo === 'bebida').reduce((s: number, it: any) => s + (it.precio - it.precio / 1.18) * it.cantidad, 0);
-                                  const venta = {
-                                    fecha_hora: formatToHondurasLocal(),
-                                    cajero: usuarioActual?.nombre || '',
-                                    caja: p.caja || caiInfo?.caja_asignada || '',
-                                    cai: caiInfo && caiInfo.cai ? caiInfo.cai : '',
-                                    factura: facturaActual,
-                                    cliente: p.cliente || null,
-                                    productos: JSON.stringify(productos),
-                                    sub_total: subTotal.toFixed(2),
-                                    isv_15: isv15.toFixed(2),
-                                    isv_18: isv18.toFixed(2),
-                                    total: Number(p.total || 0).toFixed(2),
-                                  };
-                                  const { error: errFact } = await supabase.from('facturas').insert([venta]);
-                                  if (errFact) throw errFact;
-                                  const pago = {
-                                    tipo: p.tipo_pago || 'Efectivo',
-                                    monto: Number(p.total || 0),
-                                    recibido: Number(p.total || 0),
-                                    cambio: 0,
-                                    referencia: null,
-                                    tarjeta: null,
-                                    fecha_hora: formatToHondurasLocal(),
-                                    factura: facturaActual,
-                                    cajero: usuarioActual?.nombre || null,
-                                    cajero_id: usuarioActual?.id || null,
-                                    cliente: p.cliente || null,
-                                    factura_venta: facturaActual,
-                                  };
-                                  const { error: errPago } = await supabase.from('pagos').insert([pago]);
-                                  if (errPago) throw errPago;
-                                  try { setFacturaActual((prev) => prev && prev !== 'Límite alcanzado' ? (parseInt(prev) + 1).toString() : prev); } catch { }
-                                  const { error: errDel } = await supabase.from('pedidos_envio').delete().eq('id', p.id);
-                                  if (errDel) throw errDel;
-                                  setPedidosList((prev) => prev.filter((x) => x.id !== p.id));
-                                } catch (err) {
-                                  console.error('Error procesando entrega y cobro:', err);
-                                  alert('Error procesando entrega y cobro');
-                                } finally {
-                                  setPedidosProcessingId(null);
-                                }
-                              }}
-                              disabled={pedidosProcessingId === p.id}
-                              style={{ background: '#388e3c', color: '#fff', border: 'none', padding: '8px 10px', borderRadius: 8, cursor: 'pointer' }}
-                            >
-                              {pedidosProcessingId === p.id ? '...' : 'Entregado y Cobrado'}
-                            </button>
-                          </div>
-                        </td>
+                <div style={{ overflowX: 'auto', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.1)', border: '1px solid #e0e0e0' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                    <thead>
+                      <tr style={{ background: '#1976d2', color: '#fff' }}>
+                        <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600 }}>Fecha</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600 }}>Cliente</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600 }}>Teléfono</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600 }}>Total</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600 }}>Envío</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 600 }}>Pago</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 600 }}>Acciones</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {pedidosList.map((p: any, index: number) => (
+                        <tr
+                          key={p.id}
+                          style={{
+                            borderBottom: '1px solid #eee',
+                            background: index % 2 === 0 ? '#fff' : '#f9f9f9'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = '#e3f2fd'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = index % 2 === 0 ? '#fff' : '#f9f9f9'}
+                        >
+                          <td style={{ padding: '12px 16px', color: '#444' }}>{p.fecha}</td>
+                          <td style={{ padding: '12px 16px', fontWeight: 500 }}>{p.cliente}</td>
+                          <td style={{ padding: '12px 16px', color: '#666' }}>{p.celular}</td>
+                          <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: '#2e7d32' }}>L {Number(p.total || 0).toFixed(2)}</td>
+                          <td style={{ padding: '12px 16px', textAlign: 'right', color: '#666' }}>L {Number(p.costo_envio || 0).toFixed(2)}</td>
+                          <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                            <span style={{
+                              padding: '4px 8px',
+                              borderRadius: 12,
+                              fontSize: 12,
+                              background: p.tipo_pago === 'Efectivo' ? '#e8f5e9' : '#e3f2fd',
+                              color: p.tipo_pago === 'Efectivo' ? '#2e7d32' : '#1565c0',
+                              border: `1px solid ${p.tipo_pago === 'Efectivo' ? '#c8e6c9' : '#bbdefb'}`
+                            }}>
+                              {p.tipo_pago}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                              <button
+                                onClick={async () => {
+                                  if (!confirm('¿Eliminar pedido?')) return;
+                                  setPedidosProcessingId(p.id);
+                                  try {
+                                    const { error } = await supabase.from('pedidos_envio').delete().eq('id', p.id);
+                                    if (error) throw error;
+                                    setPedidosList((prev) => prev.filter((x) => x.id !== p.id));
+                                  } catch (err) {
+                                    console.error('Error eliminando pedido:', err);
+                                    alert('Error eliminando pedido');
+                                  } finally {
+                                    setPedidosProcessingId(null);
+                                  }
+                                }}
+                                disabled={pedidosProcessingId === p.id}
+                                style={{
+                                  background: '#ffebee',
+                                  color: '#d32f2f',
+                                  border: '1px solid #ffcdd2',
+                                  padding: '6px 12px',
+                                  borderRadius: 6,
+                                  cursor: 'pointer',
+                                  fontSize: 13,
+                                  fontWeight: 500,
+                                  transition: 'all 0.2s'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = '#d32f2f';
+                                  e.currentTarget.style.color = '#fff';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = '#ffebee';
+                                  e.currentTarget.style.color = '#d32f2f';
+                                }}
+                              >
+                                {pedidosProcessingId === p.id ? '...' : 'Eliminar'}
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (facturaActual === 'Límite alcanzado') { alert('Límite de facturas alcanzado'); return; }
+                                  if (!confirm('Marcar como entregado y registrar cobro?')) return;
+                                  setPedidosProcessingId(p.id);
+                                  try {
+                                    const productos = (p.productos || []).map((pp: any) => ({ id: pp.id, nombre: pp.nombre, precio: pp.precio, cantidad: pp.cantidad, tipo: pp.tipo || 'comida' }));
+                                    const subTotal = productos.reduce((sum: number, item: any) => {
+                                      if (item.tipo === 'comida') return sum + (item.precio / 1.15) * item.cantidad;
+                                      if (item.tipo === 'bebida') return sum + (item.precio / 1.18) * item.cantidad;
+                                      return sum + item.precio * item.cantidad;
+                                    }, 0);
+                                    const isv15 = productos.filter((it: any) => it.tipo === 'comida').reduce((s: number, it: any) => s + (it.precio - it.precio / 1.15) * it.cantidad, 0);
+                                    const isv18 = productos.filter((it: any) => it.tipo === 'bebida').reduce((s: number, it: any) => s + (it.precio - it.precio / 1.18) * it.cantidad, 0);
+                                    const venta = {
+                                      fecha_hora: formatToHondurasLocal(),
+                                      cajero: usuarioActual?.nombre || '',
+                                      caja: p.caja || caiInfo?.caja_asignada || '',
+                                      cai: caiInfo && caiInfo.cai ? caiInfo.cai : '',
+                                      factura: facturaActual,
+                                      cliente: p.cliente || null,
+                                      productos: JSON.stringify(productos),
+                                      sub_total: subTotal.toFixed(2),
+                                      isv_15: isv15.toFixed(2),
+                                      isv_18: isv18.toFixed(2),
+                                      total: Number(p.total || 0).toFixed(2),
+                                    };
+                                    const { error: errFact } = await supabase.from('facturas').insert([venta]);
+                                    if (errFact) throw errFact;
+                                    const pago = {
+                                      tipo: p.tipo_pago || 'Efectivo',
+                                      monto: Number(p.total || 0),
+                                      recibido: Number(p.total || 0),
+                                      cambio: 0,
+                                      referencia: null,
+                                      tarjeta: null,
+                                      fecha_hora: formatToHondurasLocal(),
+                                      factura: facturaActual,
+                                      cajero: usuarioActual?.nombre || null,
+                                      cajero_id: usuarioActual?.id || null,
+                                      cliente: p.cliente || null,
+                                      factura_venta: facturaActual,
+                                    };
+                                    const { error: errPago } = await supabase.from('pagos').insert([pago]);
+                                    if (errPago) throw errPago;
+                                    try { setFacturaActual((prev) => prev && prev !== 'Límite alcanzado' ? (parseInt(prev) + 1).toString() : prev); } catch { }
+                                    const { error: errDel } = await supabase.from('pedidos_envio').delete().eq('id', p.id);
+                                    if (errDel) throw errDel;
+                                    setPedidosList((prev) => prev.filter((x) => x.id !== p.id));
+                                  } catch (err) {
+                                    console.error('Error procesando entrega y cobro:', err);
+                                    alert('Error procesando entrega y cobro');
+                                  } finally {
+                                    setPedidosProcessingId(null);
+                                  }
+                                }}
+                                disabled={pedidosProcessingId === p.id}
+                                style={{
+                                  background: '#e8f5e9',
+                                  color: '#2e7d32',
+                                  border: '1px solid #a5d6a7',
+                                  padding: '6px 12px',
+                                  borderRadius: 6,
+                                  cursor: 'pointer',
+                                  fontSize: 13,
+                                  fontWeight: 500,
+                                  transition: 'all 0.2s'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = '#2e7d32';
+                                  e.currentTarget.style.color = '#fff';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = '#e8f5e9';
+                                  e.currentTarget.style.color = '#2e7d32';
+                                }}
+                              >
+                                {pedidosProcessingId === p.id ? '...' : 'Entregado y Cobrado'}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
-            </div>
-          </div>
-        </div>
+            </div >
+          </div >
+        </div >
       )}
 
       {/* Modal Registrar Gasto */}
-      {showRegistrarGasto && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            background: "rgba(0,0,0,0.4)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 120000,
-          }}
-          onClick={() => cerrarRegistrarGasto()}
-        >
+      {
+        showRegistrarGasto && (
           <div
             style={{
-              background: theme === "lite" ? "#fff" : "#232526",
-              borderRadius: 12,
-              padding: 20,
-              minWidth: 320,
-              boxShadow: "0 8px 32px #0003",
-              color: theme === "lite" ? "#222" : "#f5f5f5",
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: "100vh",
+              background: "rgba(0,0,0,0.4)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 120000,
             }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={() => cerrarRegistrarGasto()}
           >
-            <h3 style={{ marginTop: 0, color: "#d32f2f" }}>Registrar gasto</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <input
-                type="number"
-                step="0.01"
-                placeholder="Monto"
-                value={gastoMonto}
-                onChange={(e) => setGastoMonto(e.target.value)}
-                style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
-              />
-              <input
-                type="text"
-                placeholder="Motivo"
-                value={gastoMotivo}
-                onChange={(e) => setGastoMotivo(e.target.value)}
-                style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
-              />
-              <input
-                type="text"
-                placeholder="Número de factura (opcional)"
-                value={gastoFactura}
-                onChange={(e) => setGastoFactura(e.target.value)}
-                style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
-              />
-            </div>
-            <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 16 }}>
-              <button
-                onClick={() => cerrarRegistrarGasto()}
-                style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#9e9e9e", color: "#fff", cursor: "pointer" }}
-                disabled={guardandoGasto}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => guardarGasto()}
-                style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#d32f2f", color: "#fff", cursor: "pointer", fontWeight: 700 }}
-                disabled={guardandoGasto}
-              >
-                {guardandoGasto ? "Guardando..." : "Guardar gasto"}
-              </button>
+            <div
+              style={{
+                background: theme === "lite" ? "#fff" : "#232526",
+                borderRadius: 12,
+                padding: 20,
+                minWidth: 320,
+                boxShadow: "0 8px 32px #0003",
+                color: theme === "lite" ? "#222" : "#f5f5f5",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 style={{ marginTop: 0, color: "#d32f2f" }}>Registrar gasto</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="Monto"
+                  value={gastoMonto}
+                  onChange={(e) => setGastoMonto(e.target.value)}
+                  style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
+                />
+                <input
+                  type="text"
+                  placeholder="Motivo"
+                  value={gastoMotivo}
+                  onChange={(e) => setGastoMotivo(e.target.value)}
+                  style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
+                />
+                <input
+                  type="text"
+                  placeholder="Número de factura (opcional)"
+                  value={gastoFactura}
+                  onChange={(e) => setGastoFactura(e.target.value)}
+                  style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
+                />
+              </div>
+              <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 16 }}>
+                <button
+                  onClick={() => cerrarRegistrarGasto()}
+                  style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#9e9e9e", color: "#fff", cursor: "pointer" }}
+                  disabled={guardandoGasto}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => guardarGasto()}
+                  style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#d32f2f", color: "#fff", cursor: "pointer", fontWeight: 700 }}
+                  disabled={guardandoGasto}
+                >
+                  {guardandoGasto ? "Guardando..." : "Guardar gasto"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Modal de éxito tras registrar gasto */}
-      {showGastoSuccess && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            background: "rgba(0,0,0,0.4)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 130000,
-          }}
-          onClick={() => setShowGastoSuccess(false)}
-        >
+      {
+        showGastoSuccess && (
           <div
             style={{
-              background: theme === "lite" ? "#fff" : "#232526",
-              borderRadius: 12,
-              padding: 20,
-              minWidth: 300,
-              boxShadow: "0 8px 32px #0003",
-              color: theme === "lite" ? "#222" : "#f5f5f5",
-              textAlign: "center",
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: "100vh",
+              background: "rgba(0,0,0,0.4)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 130000,
             }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={() => setShowGastoSuccess(false)}
           >
-            <h3 style={{ marginTop: 0, color: "#388e3c" }}>Éxito</h3>
-            <p style={{ marginTop: 8 }}>{gastoSuccessMessage}</p>
-            <div style={{ display: "flex", justifyContent: "center", marginTop: 16 }}>
-              <button
-                onClick={() => setShowGastoSuccess(false)}
-                style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#1976d2", color: "#fff", cursor: "pointer" }}
-              >
-                Aceptar
-              </button>
+            <div
+              style={{
+                background: theme === "lite" ? "#fff" : "#232526",
+                borderRadius: 12,
+                padding: 20,
+                minWidth: 300,
+                boxShadow: "0 8px 32px #0003",
+                color: theme === "lite" ? "#222" : "#f5f5f5",
+                textAlign: "center",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 style={{ marginTop: 0, color: "#388e3c" }}>Éxito</h3>
+              <p style={{ marginTop: 8 }}>{gastoSuccessMessage}</p>
+              <div style={{ display: "flex", justifyContent: "center", marginTop: 16 }}>
+                <button
+                  onClick={() => setShowGastoSuccess(false)}
+                  style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#1976d2", color: "#fff", cursor: "pointer" }}
+                >
+                  Aceptar
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Modal para requerir factura */}
       {/* Eliminado el modal de confirmación de factura */}
-    </div>
+    </div >
   );
 }

@@ -80,16 +80,16 @@ export default function RegistroCierreView({
       // mantener compatibilidad: priorizar cajero_id si existe, sino filtrar por nombre
       .or(usuarioActual?.id ? `cajero_id.eq.${usuarioActual.id}` : `cajero.eq.${usuarioActual?.nombre}`)
       .eq("caja", caja)
-  .gte("fecha", start)
-  .lte("fecha", end);
+      .gte("fecha", start)
+      .lte("fecha", end);
     const fondoFijoDia =
       aperturas && aperturas.length > 0
         ? parseFloat(aperturas[0].fondo_fijo_registrado)
         : 0;
 
     // Sumas de pagos del día por tipo y cajero (nombre)
-  const desde = start;
-  const hasta = end;
+    const desde = start;
+    const hasta = end;
 
     // Construir filtro de cajero: preferir cajero_id, si no disponible usar nombre
     const cajeroFilterIsId = !!usuarioActual?.id;
@@ -103,7 +103,7 @@ export default function RegistroCierreView({
       : pagosBase().eq("tipo", "Efectivo").eq("cajero", usuarioActual?.nombre);
 
     const { data: pagosEfectivo } = await pagosEfectivoQuery;
-    console.debug("pagosEfectivo count:", pagosEfectivo?.length, "sample:", pagosEfectivo?.slice(0,3));
+    console.debug("pagosEfectivo count:", pagosEfectivo?.length, "sample:", pagosEfectivo?.slice(0, 3));
     const efectivoDia = pagosEfectivo
       ? pagosEfectivo.reduce((sum, p) => sum + parseFloat(p.monto || 0), 0)
       : 0;
@@ -136,7 +136,7 @@ export default function RegistroCierreView({
       ? pagosBase().eq("tipo", "Tarjeta").eq("cajero_id", usuarioActual.id)
       : pagosBase().eq("tipo", "Tarjeta").eq("cajero", usuarioActual?.nombre);
     const { data: pagosTarjeta } = await pagosTarjetaQuery;
-    console.debug("pagosTarjeta count:", pagosTarjeta?.length, "sample:", pagosTarjeta?.slice(0,3));
+    console.debug("pagosTarjeta count:", pagosTarjeta?.length, "sample:", pagosTarjeta?.slice(0, 3));
     const tarjetaDia = pagosTarjeta
       ? pagosTarjeta.reduce((sum, p) => sum + parseFloat(p.monto || 0), 0)
       : 0;
@@ -146,7 +146,7 @@ export default function RegistroCierreView({
       ? pagosBase().eq("tipo", "Transferencia").eq("cajero_id", usuarioActual.id)
       : pagosBase().eq("tipo", "Transferencia").eq("cajero", usuarioActual?.nombre);
     const { data: pagosTrans } = await pagosTransQuery;
-    console.debug("pagosTrans count:", pagosTrans?.length, "sample:", pagosTrans?.slice(0,3));
+    console.debug("pagosTrans count:", pagosTrans?.length, "sample:", pagosTrans?.slice(0, 3));
     const transferenciasDia = pagosTrans
       ? pagosTrans.reduce((sum, p) => sum + parseFloat(p.monto || 0), 0)
       : 0;
@@ -154,6 +154,136 @@ export default function RegistroCierreView({
 
     return { fondoFijoDia, efectivoDia: efectivoDiaNet, tarjetaDia, transferenciasDia, gastosDia };
   }
+
+  const printCierreReport = (registro: any, gastosDia: number) => {
+    const logoUrl = '/favicon.ico';
+    const img = new Image();
+    img.src = logoUrl;
+
+    const doPrint = () => {
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) return;
+
+      const html = `
+        <html>
+          <head>
+            <title>Reporte de Cierre</title>
+            <style>
+              body { font-family: 'Courier New', monospace; padding: 10px; width: 80mm; margin: 0 auto; color: #000; }
+              .header { text-align: center; margin-bottom: 20px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
+              .logo { width: 120px; height: 120px; margin-bottom: 10px; }
+              .title { font-size: 16px; font-weight: bold; margin: 10px 0; }
+              .info { font-size: 14px; margin-bottom: 15px; }
+              .row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px; }
+              .divider { border-top: 1px dashed #000; margin: 10px 0; }
+              .total { font-size: 16px; font-weight: bold; margin-top: 10px; }
+              .footer { text-align: center; margin-top: 30px; font-size: 12px; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <img src="${logoUrl}" class="logo" />
+              <div style="font-size: 18px; font-weight: bold;">POLLOS CESAR</div>
+              <div style="font-size: 14px;">ISLAS DE LA BAHÍA, SANDY BAY</div>
+              <div style="font-size: 14px;">BO. LA UVA</div>
+              <div style="font-size: 14px;">RTN: 18071993019392</div>
+              <div style="font-size: 14px;">Prop: CESAR BENIGNO VEGA CANELAS</div>
+              <div style="font-size: 14px;">Cel: 32841306</div>
+              <div class="title">REPORTE DE CIERRE DE CAJA</div>
+            </div>
+
+            <div class="info">
+              <div><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-HN')} ${new Date().toLocaleTimeString('es-HN')}</div>
+              <div><strong>Cajero:</strong> ${registro.cajero}</div>
+              <div><strong>Caja:</strong> ${registro.caja}</div>
+            </div>
+
+            <div class="divider"></div>
+            <div style="text-align: center; font-weight: bold; margin-bottom: 10px;">SISTEMA</div>
+            
+            <div class="row">
+              <span>Fondo Fijo:</span>
+              <span>L ${Number(registro.fondo_fijo).toFixed(2)}</span>
+            </div>
+            <div class="row">
+              <span>Ventas Efectivo (Neto):</span>
+              <span>L ${Number(registro.efectivo_dia).toFixed(2)}</span>
+            </div>
+            <div class="row">
+              <span>Ventas Tarjeta:</span>
+              <span>L ${Number(registro.monto_tarjeta_dia).toFixed(2)}</span>
+            </div>
+            <div class="row">
+              <span>Ventas Transf.:</span>
+              <span>L ${Number(registro.transferencias_dia).toFixed(2)}</span>
+            </div>
+             <div class="row">
+              <span>Gastos del Día:</span>
+              <span>L ${Number(gastosDia).toFixed(2)}</span>
+            </div>
+
+            <div class="divider"></div>
+            <div class="row" style="font-weight: bold;">
+              <span>EFECTIVO ESPERADO:</span>
+              <span>L ${(Number(registro.fondo_fijo) + Number(registro.efectivo_dia)).toFixed(2)}</span>
+            </div>
+            <div style="font-size: 11px; text-align: right; color: #666;">(Fondo + Ventas Efec. Neto)</div>
+
+            <div class="divider"></div>
+            <div style="text-align: center; font-weight: bold; margin-bottom: 10px;">CONTEO (USUARIO)</div>
+
+            <div class="row">
+              <span>Fondo Fijo:</span>
+              <span>L ${Number(registro.fondo_fijo_registrado).toFixed(2)}</span>
+            </div>
+            <div class="row">
+              <span>Efectivo:</span>
+              <span>L ${Number(registro.efectivo_registrado).toFixed(2)}</span>
+            </div>
+            <div class="row">
+              <span>Tarjeta:</span>
+              <span>L ${Number(registro.monto_tarjeta_registrado).toFixed(2)}</span>
+            </div>
+            <div class="row">
+              <span>Transferencia:</span>
+              <span>L ${Number(registro.transferencias_registradas).toFixed(2)}</span>
+            </div>
+
+            <div class="divider"></div>
+            <div class="row" style="font-weight: bold; font-size: 16px;">
+              <span>DIFERENCIA:</span>
+              <span>L ${Number(registro.diferencia).toFixed(2)}</span>
+            </div>
+            <div class="row">
+              <span>Estado:</span>
+              <span>${registro.observacion.toUpperCase()}</span>
+            </div>
+
+            <div class="footer">
+              <p>__________________________</p>
+              <p>Firma Cajero</p>
+              <br/>
+              <p>__________________________</p>
+              <p>Firma Supervisor</p>
+            </div>
+            <script>
+              window.onload = function() { setTimeout(function() { window.print(); window.close(); }, 500); };
+            </script>
+          </body>
+        </html>
+      `;
+      printWindow.document.write(html);
+      printWindow.document.close();
+    };
+
+    img.onload = doPrint;
+    img.onerror = doPrint; // Print anyway if image fails
+
+    // Timeout fallback in case onload never fires
+    setTimeout(() => {
+      if (!img.complete) doPrint();
+    }, 2000);
+  };
 
   const handleGuardar = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,7 +294,7 @@ export default function RegistroCierreView({
     const efectivoFilled = efectivo.trim() !== "";
     const tarjetaFilled = tarjeta.trim() !== "";
     const transferenciasFilled = transferencias.trim() !== "";
-  const isApertura = fondoFijoFilled && !efectivoFilled && !tarjetaFilled && !transferenciasFilled && !aperturaExisteHoy;
+    const isApertura = fondoFijoFilled && !efectivoFilled && !tarjetaFilled && !transferenciasFilled && !aperturaExisteHoy;
     const isCierreReady = fondoFijoFilled && efectivoFilled && tarjetaFilled && transferenciasFilled;
     const showGuardar = isApertura || isCierreReady;
     if (!showGuardar) {
@@ -172,16 +302,16 @@ export default function RegistroCierreView({
       setError("Complete los campos requeridos antes de guardar (fondo fijo y los montos de cierre).");
       return;
     }
-  const { start, end } = getLocalDayRange();
+    const { start, end } = getLocalDayRange();
     // Verificar si ya existe apertura hoy SOLO si se está registrando apertura
     const { data: aperturasHoy } = await supabase
-  .from("cierres")
-  .select("id")
-  .eq("tipo_registro", "apertura")
-  .eq("cajero_id", usuarioActual?.id)
-  .eq("caja", caja)
-  .gte("fecha", start)
-  .lte("fecha", end);
+      .from("cierres")
+      .select("id")
+      .eq("tipo_registro", "apertura")
+      .eq("cajero_id", usuarioActual?.id)
+      .eq("caja", caja)
+      .gte("fecha", start)
+      .lte("fecha", end);
     if (
       fondoFijo &&
       !efectivo &&
@@ -198,13 +328,13 @@ export default function RegistroCierreView({
     }
     // Verificar si ya existe cierre hoy
     const { data: cierresHoy } = await supabase
-  .from("cierres")
-  .select("id")
-  .eq("tipo_registro", "cierre")
-  .eq("cajero_id", usuarioActual?.id)
-  .eq("caja", caja)
-  .gte("fecha", start)
-  .lte("fecha", end);
+      .from("cierres")
+      .select("id")
+      .eq("tipo_registro", "cierre")
+      .eq("cajero_id", usuarioActual?.id)
+      .eq("caja", caja)
+      .gte("fecha", start)
+      .lte("fecha", end);
     if (
       cierresHoy &&
       cierresHoy.length > 0 &&
@@ -299,6 +429,11 @@ export default function RegistroCierreView({
       if (error) {
         alert("Error al guardar: " + error.message);
       } else {
+        // Imprimir reporte si es CIERRE
+        if (registro.tipo_registro === 'cierre') {
+          printCierreReport(registro, gastosDia);
+        }
+
         // Enviar datos al script de Google (fire-and-forget)
         try {
           const gsBase = "https://script.google.com/macros/s/AKfycbxslpWLo-Ex2cuqBS6Rnx_O2f-RMCZ5KWp1D1xaWM45gL0APbNVcT9a9ZTQTJWxLMVfwQ/exec";
@@ -333,10 +468,10 @@ export default function RegistroCierreView({
           } catch (e) {
             // fallback a fetch no-cors con keepalive
             try {
-              fetch(url, { method: "GET", mode: "no-cors", keepalive: true }).catch(() => {});
+              fetch(url, { method: "GET", mode: "no-cors", keepalive: true }).catch(() => { });
             } catch (e2) {
               // último recurso: fetch normal sin await
-              fetch(url).catch(() => {});
+              fetch(url).catch(() => { });
             }
           }
         } catch (e) {
@@ -533,7 +668,7 @@ export default function RegistroCierreView({
         {aperturaLoading && (
           <div style={{ marginTop: 8, fontSize: 13, color: '#1976d2' }}>Cargando apertura...</div>
         )}
-  {/* drawerMessage removido */}
+        {/* drawerMessage removido */}
         {error && <div style={{ color: "red", fontWeight: 600 }}>{error}</div>}
         {loading && (
           <div style={{ marginTop: 18, textAlign: "center" }}>
