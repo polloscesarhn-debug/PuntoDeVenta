@@ -86,8 +86,16 @@ function Root() {
     } catch (e) {
       // ignore
     }
-    // do a hard reload
-    window.location.reload();
+    // Force a full navigation bypassing browser cache by adding a cache-buster query param.
+    // This avoids cases where a simple F5 or reload returns a cached index.html.
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('_cb', String(Date.now()));
+      window.location.href = url.toString();
+    } catch (e) {
+      // fallback
+      window.location.reload();
+    }
   };
 
   const cancelUpdate = () => {
