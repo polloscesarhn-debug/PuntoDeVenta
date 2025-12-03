@@ -169,26 +169,24 @@ export default function RegistroCierreView({
           <head>
             <title>Reporte de Cierre</title>
             <style>
-              body { font-family: 'Courier New', monospace; padding: 10px; width: 80mm; margin: 0 auto; color: #000; }
+              /* Make all text bold and keep monospace for alignment */
+              body { font-family: 'Courier New', monospace; padding: 10px; width: 80mm; margin: 0 auto; color: #000; font-weight: 700; font-size: 16px; }
               .header { text-align: center; margin-bottom: 20px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
-              .logo { width: 120px; height: 120px; margin-bottom: 10px; }
-              .title { font-size: 16px; font-weight: bold; margin: 10px 0; }
-              .info { font-size: 14px; margin-bottom: 15px; }
-              .row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px; }
+              /* Increase logo 4x (from 120 -> 480) */
+              .logo { width: 480px; height: 480px; margin-bottom: 10px; }
+              .title { font-size: 20px; margin: 10px 0; }
+              .info { font-size: 16px; margin-bottom: 15px; }
+              .row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 16px; }
               .divider { border-top: 1px dashed #000; margin: 10px 0; }
-              .total { font-size: 16px; font-weight: bold; margin-top: 10px; }
-              .footer { text-align: center; margin-top: 30px; font-size: 12px; }
+              .total { font-size: 18px; margin-top: 10px; }
+              .footer { text-align: center; margin-top: 30px; font-size: 14px; }
             </style>
           </head>
           <body>
             <div class="header">
-              <img src="${logoUrl}" class="logo" />
-              <div style="font-size: 18px; font-weight: bold;">POLLOS CESAR</div>
-              <div style="font-size: 14px;">ISLAS DE LA BAHÍA, SANDY BAY</div>
-              <div style="font-size: 14px;">BO. LA UVA</div>
-              <div style="font-size: 14px;">RTN: 18071993019392</div>
-              <div style="font-size: 14px;">Prop: CESAR BENIGNO VEGA CANELAS</div>
-              <div style="font-size: 14px;">Cel: 32841306</div>
+             
+              <div style="font-size: 18px;">POLLOS CESAR</div>
+          
               <div class="title">REPORTE DE CIERRE DE CAJA</div>
             </div>
 
@@ -254,10 +252,7 @@ export default function RegistroCierreView({
               <span>DIFERENCIA:</span>
               <span>L ${Number(registro.diferencia).toFixed(2)}</span>
             </div>
-            <div class="row">
-              <span>Estado:</span>
-              <span>${registro.observacion.toUpperCase()}</span>
-            </div>
+          
 
             <div class="footer">
               <p>__________________________</p>

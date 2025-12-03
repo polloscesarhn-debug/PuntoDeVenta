@@ -1357,6 +1357,171 @@ export default function PuntoDeVentaView({
             </p>
           ) : (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              {/* Botones principales arriba de la tabla */}
+              <div style={{ display: "flex", gap: 12, justifyContent: "center", marginBottom: 12 }}>
+                <button
+                  onClick={limpiarSeleccion}
+                  style={{
+                    background: theme === "lite" ? "#d32f2f" : "#b71c1c",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "10px 24px",
+                    fontWeight: 600,
+                    fontSize: 16,
+                    cursor: "pointer",
+                    opacity: seleccionados.length === 0 ? 0.5 : 1,
+                    transition: "background 0.3s",
+                  }}
+                  disabled={seleccionados.length === 0}
+                >
+                  Limpiar
+                </button>
+                <button
+                  style={{
+                    background: theme === "lite" ? "#1976d2" : "#1565c0",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "10px 24px",
+                    fontWeight: 600,
+                    fontSize: 16,
+                    cursor: "pointer",
+                    opacity: seleccionados.length === 0 || checkingFactura ? 0.5 : 1,
+                    transition: "background 0.3s",
+                  }}
+                  disabled={seleccionados.length === 0 || checkingFactura}
+                  onClick={async () => {
+                    // Al tocar "Confirmar Pedido" validar conexión y número de factura
+                    if (facturaActual === "Límite alcanzado") {
+                      alert("¡Límite de facturas alcanzado!");
+                      return;
+                    }
+                    if (!navigator.onLine) {
+                      // Mostrar modal que indique problema de red
+                      setShowNoConnectionModal(true);
+                      return;
+                    }
+                    // Evitar llamadas concurrentes
+                    if (checkingFactura) return;
+                    setCheckingFactura(true);
+                    try {
+                      // Obtener datos de CAI (rango y caja) para respetar límite si es posible
+                      let rango_fin: number | null = null;
+                      let cajaAsignada = caiInfo?.caja_asignada;
+                      try {
+                        const { data: caiData } = await supabase
+                          .from("cai_facturas")
+                          .select("rango_desde, rango_hasta, caja_asignada")
+                          .eq("cajero_id", usuarioActual?.id)
+                          .single();
+                        if (caiData) {
+                          rango_fin = caiData.rango_hasta ? parseInt(caiData.rango_hasta) : null;
+                          cajaAsignada = caiData.caja_asignada || cajaAsignada;
+                        }
+                      } catch (e) {
+                        // si falla, continuar sin rango
+                      }
+
+                      // Empezar desde el número actual
+                      let num = parseInt(facturaActual as string);
+                      if (!Number.isFinite(num)) {
+                        // Si no es numérico, intentar recalcular como en fetchCaiYFactura
+                        const { data: facturasData } = await supabase
+                          .from("facturas")
+                          .select("factura")
+                          .eq("cajero", usuarioActual?.nombre)
+                          .eq("caja", cajaAsignada || "");
+                        let maxFactura = -1;
+                        if (facturasData && facturasData.length > 0) {
+                          for (const f of facturasData) {
+                            const n = parseInt(f.factura);
+                            if (Number.isFinite(n) && n > maxFactura) maxFactura = n;
+                          }
+                        }
+                        if (maxFactura >= 0) {
+                          num = maxFactura + 1;
+                        } else {
+                          // fallback: usar 1
+                          num = 1;
+                        }
+                      }
+
+                      // Buscar un número libre incrementando si está ocupado en facturas o pagos
+                      const maxAttempts = 1000; // to avoid infinite loop
+                      let attempts = 0;
+                      while (attempts < maxAttempts) {
+                        attempts++;
+                        const facturaStr = num.toString();
+                        // comprobar en facturas
+                        const { data: factData } = await supabase
+                          .from("facturas")
+                          .select("factura")
+                          .eq("factura", facturaStr)
+                          .eq("caja", cajaAsignada || "")
+                          .limit(1);
+                        // comprobar en pagos
+                        const { data: pagosData } = await supabase
+                          .from("pagos")
+                          .select("factura")
+                          .eq("factura", facturaStr)
+                          .eq("cajero", usuarioActual?.nombre)
+                          .eq("caja", cajaAsignada || "")
+                          .limit(1);
+
+                        const existeFactura = Array.isArray(factData) && factData.length > 0;
+                        const existePago = Array.isArray(pagosData) && pagosData.length > 0;
+
+                        if (!existeFactura && !existePago) {
+                          // número libre
+                          setFacturaActual(facturaStr);
+                          setShowClienteModal(true);
+                          break;
+                        }
+
+                        // Si existe, incrementar y reintentar
+                        num++;
+                        // Si tenemos rango_fin, verificar que no lo excedemos
+                        if (rango_fin && num > rango_fin) {
+                          setFacturaActual("Límite alcanzado");
+                          alert("¡Se ha alcanzado el límite de facturas para este cajero!");
+                          break;
+                        }
+                      }
+
+                      if (attempts >= maxAttempts) {
+                        alert("No se pudo asignar un número de factura libre, intenta de nuevo más tarde.");
+                      }
+                    } catch (err) {
+                      console.error("Error validando factura:", err);
+                      alert("Error al validar número de factura. Intenta de nuevo.");
+                    } finally {
+                      setCheckingFactura(false);
+                    }
+                  }}
+                >
+                  {checkingFactura ? "Verificando..." : "Confirmar Pedido"}
+                </button>
+                <button
+                  style={{
+                    background: "#2e7d32",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "10px 24px",
+                    fontWeight: 600,
+                    fontSize: 16,
+                    cursor: "pointer",
+                    marginLeft: 12,
+                    opacity: seleccionados.length === 0 ? 0.5 : 1,
+                  }}
+                  disabled={seleccionados.length === 0}
+                  onClick={() => setShowEnvioModal(true)}
+                >
+                  Domicilio
+                </button>
+              </div>
+
               <div style={{
                 display: 'flex',
                 padding: '10px 12px',
@@ -1379,7 +1544,7 @@ export default function PuntoDeVentaView({
                   listStyle: "none",
                   padding: 0,
                   margin: 0,
-                  flex: 1,
+                  maxHeight: 380,
                   overflowY: "auto",
                   background: theme === 'lite' ? '#fff' : '#333',
                   borderRadius: '0 0 8px 8px',
@@ -1469,169 +1634,6 @@ export default function PuntoDeVentaView({
               </ul>
             </div>
           )}
-          <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-            <button
-              onClick={limpiarSeleccion}
-              style={{
-                background: theme === "lite" ? "#d32f2f" : "#b71c1c",
-                color: "#fff",
-                border: "none",
-                borderRadius: 8,
-                padding: "10px 24px",
-                fontWeight: 600,
-                fontSize: 16,
-                cursor: "pointer",
-                opacity: seleccionados.length === 0 ? 0.5 : 1,
-                transition: "background 0.3s",
-              }}
-              disabled={seleccionados.length === 0}
-            >
-              Limpiar
-            </button>
-            <button
-              style={{
-                background: theme === "lite" ? "#1976d2" : "#1565c0",
-                color: "#fff",
-                border: "none",
-                borderRadius: 8,
-                padding: "10px 24px",
-                fontWeight: 600,
-                fontSize: 16,
-                cursor: "pointer",
-                opacity: seleccionados.length === 0 ? 0.5 : 1,
-                transition: "background 0.3s",
-              }}
-              disabled={seleccionados.length === 0 || checkingFactura}
-              onClick={async () => {
-                // Al tocar "Confirmar Pedido" validar conexión y número de factura
-                if (facturaActual === "Límite alcanzado") {
-                  alert("¡Límite de facturas alcanzado!");
-                  return;
-                }
-                if (!navigator.onLine) {
-                  // Mostrar modal que indique problema de red
-                  setShowNoConnectionModal(true);
-                  return;
-                }
-                // Evitar llamadas concurrentes
-                if (checkingFactura) return;
-                setCheckingFactura(true);
-                try {
-                  // Obtener datos de CAI (rango y caja) para respetar límite si es posible
-                  let rango_fin: number | null = null;
-                  let cajaAsignada = caiInfo?.caja_asignada;
-                  try {
-                    const { data: caiData } = await supabase
-                      .from("cai_facturas")
-                      .select("rango_desde, rango_hasta, caja_asignada")
-                      .eq("cajero_id", usuarioActual?.id)
-                      .single();
-                    if (caiData) {
-                      rango_fin = caiData.rango_hasta ? parseInt(caiData.rango_hasta) : null;
-                      cajaAsignada = caiData.caja_asignada || cajaAsignada;
-                    }
-                  } catch (e) {
-                    // si falla, continuar sin rango
-                  }
-
-                  // Empezar desde el número actual
-                  let num = parseInt(facturaActual as string);
-                  if (!Number.isFinite(num)) {
-                    // Si no es numérico, intentar recalcular como en fetchCaiYFactura
-                    const { data: facturasData } = await supabase
-                      .from("facturas")
-                      .select("factura")
-                      .eq("cajero", usuarioActual?.nombre)
-                      .eq("caja", cajaAsignada || "");
-                    let maxFactura = -1;
-                    if (facturasData && facturasData.length > 0) {
-                      for (const f of facturasData) {
-                        const n = parseInt(f.factura);
-                        if (Number.isFinite(n) && n > maxFactura) maxFactura = n;
-                      }
-                    }
-                    if (maxFactura >= 0) {
-                      num = maxFactura + 1;
-                    } else {
-                      // fallback: usar 1
-                      num = 1;
-                    }
-                  }
-
-                  // Buscar un número libre incrementando si está ocupado en facturas o pagos
-                  const maxAttempts = 1000; // to avoid infinite loop
-                  let attempts = 0;
-                  while (attempts < maxAttempts) {
-                    attempts++;
-                    const facturaStr = num.toString();
-                    // comprobar en facturas
-                    const { data: factData } = await supabase
-                      .from("facturas")
-                      .select("factura")
-                      .eq("factura", facturaStr)
-                      .eq("caja", cajaAsignada || "")
-                      .limit(1);
-                    // comprobar en pagos
-                    const { data: pagosData } = await supabase
-                      .from("pagos")
-                      .select("factura")
-                      .eq("factura", facturaStr)
-                      .eq("cajero", usuarioActual?.nombre)
-                      .eq("caja", cajaAsignada || "")
-                      .limit(1);
-
-                    const existeFactura = Array.isArray(factData) && factData.length > 0;
-                    const existePago = Array.isArray(pagosData) && pagosData.length > 0;
-
-                    if (!existeFactura && !existePago) {
-                      // número libre
-                      setFacturaActual(facturaStr);
-                      setShowClienteModal(true);
-                      break;
-                    }
-
-                    // Si existe, incrementar y reintentar
-                    num++;
-                    // Si tenemos rango_fin, verificar que no lo excedemos
-                    if (rango_fin && num > rango_fin) {
-                      setFacturaActual("Límite alcanzado");
-                      alert("¡Se ha alcanzado el límite de facturas para este cajero!");
-                      break;
-                    }
-                  }
-
-                  if (attempts >= maxAttempts) {
-                    alert("No se pudo asignar un número de factura libre, intenta de nuevo más tarde.");
-                  }
-                } catch (err) {
-                  console.error("Error validando factura:", err);
-                  alert("Error al validar número de factura. Intenta de nuevo.");
-                } finally {
-                  setCheckingFactura(false);
-                }
-              }}
-            >
-              {checkingFactura ? "Verificando..." : "Confirmar Pedido"}
-            </button>
-            <button
-              style={{
-                background: "#2e7d32",
-                color: "#fff",
-                border: "none",
-                borderRadius: 8,
-                padding: "10px 24px",
-                fontWeight: 600,
-                fontSize: 16,
-                cursor: "pointer",
-                marginLeft: 12,
-                opacity: seleccionados.length === 0 ? 0.5 : 1,
-              }}
-              disabled={seleccionados.length === 0}
-              onClick={() => setShowEnvioModal(true)}
-            >
-              Domicilio
-            </button>
-          </div>
         </div>
       </div>
 

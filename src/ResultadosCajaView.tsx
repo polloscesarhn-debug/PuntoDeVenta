@@ -279,64 +279,10 @@ export default function ResultadosCajaView() {
                         <div><b>EFECTIVO:</b> {((parseFloat(cierre.efectivo_registrado) || 0) - (parseFloat(cierre.efectivo_dia) || 0)).toFixed(2)}</div>
                         <div><b>TARJETA:</b> {((parseFloat(cierre.monto_tarjeta_registrado) || 0) - (parseFloat(cierre.monto_tarjeta_dia) || 0)).toFixed(2)}</div>
                         <div><b>TRANSFERENCIA:</b> {((parseFloat(cierre.transferencias_registradas) || 0) - (parseFloat(cierre.transferencias_dia) || 0)).toFixed(2)}</div>
-                        {/* Input para aclarar si la diferencia es distinta de 0 */}
+                        {/* Si existe diferencia aquí mostramos una indicación; la validación/guardado
+                            se realiza en el bloque de 'TOTAL' más abajo para evitar duplicados del formulario. */}
                         {parseFloat(cierre.diferencia) !== 0 && (
-                          <form
-                            onSubmit={async (e) => {
-                              e.preventDefault();
-                              setValidando(true);
-                              // Consultar clave en Supabase
-                              const { data, error } = await supabase
-                                .from("claves_autorizacion")
-                                .select("clave")
-                                .eq("id", 1)
-                                .single();
-                              if (!error && data && String(data.clave) === clave) {
-                                setTimeout(() => {
-                                  setValidando(false);
-                                  setCorrecto(true);
-                                  setTimeout(async () => {
-                                    setCorrecto(false);
-                                    // Actualizar observación del cierre
-                                    await supabase
-                                      .from("cierres")
-                                      .update({ observacion: "aclarado" })
-                                      .eq("id", cierre.id)
-                                      .eq("cajero_id", usuarioActual.id);
-                                    window.location.reload();
-                                  }, 100);
-                                }, 800);
-                              } else {
-                                setValidando(false);
-                                setCorrecto(false);
-                                alert("Clave incorrecta");
-                              }
-                            }}
-                            style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}
-                          >
-                            <label htmlFor={`claveAclaracion${idx}`} style={{ fontWeight: 600 }}>
-                              CLAVE DE ACLARACION
-                            </label>
-                            <input
-                              id={`claveAclaracion${idx}`}
-                              type="text"
-                              value={clave}
-                              onChange={(e) => setClave(e.target.value)}
-                              style={{ padding: 8, borderRadius: 6, border: "1px solid #1976d2", fontSize: 16 }}
-                            />
-                            <button
-                              type="submit"
-                              style={{ padding: "10px 18px", background: "#1976d2", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 16, cursor: "pointer" }}
-                              disabled={validando}
-                            >
-                              {validando ? "Validando..." : "GUARDAR"}
-                            </button>
-                            {correcto && (
-                              <div style={{ color: "#388e3c", fontWeight: 700, fontSize: 18, marginTop: 8 }}>
-                                Correcto, aclarando...
-                              </div>
-                            )}
-                          </form>
+                          <div style={{ color: '#d32f2f', fontWeight: 700, marginTop: 8 }}>Diferencia pendiente</div>
                         )}
                       </div>
                     );
