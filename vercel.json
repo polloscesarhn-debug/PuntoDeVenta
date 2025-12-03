@@ -1,4 +1,5 @@
 {
+  "version": "1.0.4",
   "rewrites": [
     { "source": "/((?!.*\\.).*)", "destination": "/index.html" }
   ]

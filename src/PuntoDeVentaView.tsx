@@ -667,23 +667,41 @@ export default function PuntoDeVentaView({
       >
         <button
           onClick={() => {
-            const next = theme === "lite" ? "dark" : "lite";
-            setTheme(next);
-            localStorage.setItem("theme", next);
+            setTheme("dark");
+            localStorage.setItem("theme", "dark");
           }}
           style={{
-            background: theme === "lite" ? "#1976d2" : "#333",
-            color: "#fff",
-            border: "none",
+            background: theme === "dark" ? "#1976d2" : "transparent",
+            color: theme === "dark" ? "#fff" : theme === "lite" ? "#1976d2" : "#fff",
+            border: theme === "dark" ? "none" : "1px solid #1976d2",
             borderRadius: 8,
             padding: "8px 12px",
             fontWeight: 700,
             cursor: "pointer",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.12)",
+            boxShadow: theme === "dark" ? "0 2px 10px rgba(0,0,0,0.12)" : "0 2px 8px rgba(25,118,210,0.12)",
           }}
-          title={theme === "lite" ? "Cambiar a modo oscuro" : "Cambiar a modo claro"}
+          title="Activar modo oscuro"
         >
-          {theme === "lite" ? "Modo oscuro" : "Modo claro"}
+          Modo oscuro
+        </button>
+        <button
+          onClick={() => {
+            setTheme("lite");
+            localStorage.setItem("theme", "lite");
+          }}
+          style={{
+            background: theme === "lite" ? "#1976d2" : "transparent",
+            color: theme === "lite" ? "#fff" : theme === "dark" ? "#f5f5f5" : "#1976d2",
+            border: theme === "lite" ? "none" : "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 8,
+            padding: "8px 12px",
+            fontWeight: 700,
+            cursor: "pointer",
+            boxShadow: theme === "lite" ? "0 2px 10px rgba(0,0,0,0.12)" : "0 2px 8px rgba(0,0,0,0.12)",
+          }}
+          title="Activar modo claro"
+        >
+          Modo claro
         </button>
         {usuarioActual?.rol === "admin" && (
           <button
