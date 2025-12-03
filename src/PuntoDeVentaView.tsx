@@ -903,19 +903,16 @@ export default function PuntoDeVentaView({
               }mm; margin:0; padding:${etiquetaConfig?.etiqueta_padding || 8
               }px;'>
                 <div style='font-size:${etiquetaConfig?.etiqueta_fontsize || 24
-              }px; font-weight:700; color:#388e3c; text-align:center; margin-bottom:10px;'>${etiquetaConfig?.etiqueta_comanda || "COMANDA COCINA"
+              }px; font-weight:800; color:#000; text-align:center; margin-bottom:6px;'>${etiquetaConfig?.etiqueta_comanda || "COMANDA COCINA"
               }</div>
-                <div style='font-size:20px; font-weight:600; color:#222; text-align:center; margin-bottom:12px;'>Cliente: <b>${nombreCliente}</b></div>
+                <div style='font-size:20px; font-weight:800; color:#000; text-align:center; margin-bottom:12px;'>Cliente: <b>${nombreCliente}</b></div>
+                <div style='font-size:14px; font-weight:600; color:#222; text-align:center; margin-bottom:6px;'>Factura: ${facturaActual || ''}</div>
                 <ul style='list-style:none; padding:0; margin-bottom:0;'>
                   ${seleccionados
                 .filter((p) => p.tipo === "comida")
                 .map(
                   (p) =>
-                    `<li style='font-size:${etiquetaConfig?.etiqueta_fontsize || 20
-                    }px; margin-bottom:10px; border-bottom:1px dashed #eee; padding-bottom:8px; text-align:left;'><span style='font-weight:700;'>${p.nombre
-                    }</span> <span style='float:right;'>L ${p.precio.toFixed(
-                      2
-                    )} x${p.cantidad}</span></li>`
+                    `<li style='font-size:${etiquetaConfig?.etiqueta_fontsize || 20}px; margin-bottom:6px; padding-bottom:8px; text-align:left; border-bottom:1px solid #000;'><div style="display:flex; justify-content:space-between; align-items:center;"><span style='font-weight:700;'>${p.nombre}</span><span>L ${p.precio.toFixed(2)} x${p.cantidad}</span></div></li>`
                 )
                 .join("")}
                 </ul>
@@ -941,7 +938,7 @@ export default function PuntoDeVentaView({
               }mm; margin:0; padding:${reciboConfig?.recibo_padding || 8}px; background:#fff;'>
                 <!-- Logo -->
                 <div style='text-align:center; margin-bottom:12px;'>
-                  <img src='/favicon.ico' alt='POLLOS CESAR' style='width:120px; height:120px;' onload='window.imageLoaded = true;' />
+                  <img src='/favicon.ico' alt='POLLOS CESAR' style='width:320px; height:320px;' onload='window.imageLoaded = true;' />
                 </div>
                 
                 <!-- Información del Negocio -->
@@ -956,8 +953,9 @@ export default function PuntoDeVentaView({
                   <div style='text-align:center; font-size:16px; font-weight:700;'>RECIBO DE VENTA</div>
                 </div>
                 
-                <!-- Información del Cliente y Fecha -->
+                <!-- Información del Cliente, Factura y Fecha -->
                 <div style='font-size:14px; margin-bottom:3px;'>Cliente: ${nombreCliente}</div>
+                <div style='font-size:14px; margin-bottom:3px;'>Factura: ${facturaActual || ''}</div>
                 <div style='font-size:14px; margin-bottom:10px;'>Fecha: ${new Date().toLocaleString('es-HN', { timeZone: 'America/Tegucigalpa' })}</div>
                 
                 <!-- Tabla de Productos -->
@@ -1804,10 +1802,11 @@ export default function PuntoDeVentaView({
 
                           const comandaHtml = `
                         <div style='font-family:monospace; width:${etiquetaConfig?.etiqueta_ancho || 80}mm; margin:0; padding:${etiquetaConfig?.etiqueta_padding || 8}px;'>
-                          <div style='font-size:${etiquetaConfig?.etiqueta_fontsize || 24}px; font-weight:700; color:#388e3c; text-align:center; margin-bottom:10px;'>${etiquetaConfig?.etiqueta_comanda || 'COMANDA COCINA'}</div>
-                          <div style='font-size:20px; font-weight:600; color:#222; text-align:center; margin-bottom:12px;'>Cliente: <b>${registro.cliente}</b></div>
+                          <div style='font-size:${etiquetaConfig?.etiqueta_fontsize || 24}px; font-weight:800; color:#000; text-align:center; margin-bottom:10px;'>${etiquetaConfig?.etiqueta_comanda || 'COMANDA COCINA'}</div>
+                          <div style='font-size:20px; font-weight:800; color:#000; text-align:center; margin-bottom:12px;'>Cliente: <b>${registro.cliente}</b></div>
+                          <div style='font-size:14px; font-weight:600; color:#222; text-align:center; margin-bottom:6px;'>Factura: ${facturaActual || ''}</div>
                           <ul style='list-style:none; padding:0; margin-bottom:0;'>
-                            ${registro.productos.map((p: any) => `<li style='font-size:${etiquetaConfig?.etiqueta_fontsize || 20}px; margin-bottom:10px; border-bottom:1px dashed #eee; padding-bottom:8px; text-align:left;'><span style='font-weight:700;'>${p.nombre}</span> <span style='float:right;'>L ${p.precio.toFixed(2)} x${p.cantidad}</span></li>`).join('')}
+                            ${registro.productos.map((p: any) => `<li style='font-size:${etiquetaConfig?.etiqueta_fontsize || 20}px; margin-bottom:6px; padding-bottom:8px; text-align:left; border-bottom:1px solid #000;'><div style="display:flex; justify-content:space-between; align-items:center;"><span style='font-weight:700;'>${p.nombre}</span><span>L ${p.precio.toFixed(2)} x${p.cantidad}</span></div></li>`).join('')}
                           </ul>
                         </div>
                       `;
@@ -1827,7 +1826,7 @@ export default function PuntoDeVentaView({
                         <div style='font-family:monospace; width:${reciboConfig?.recibo_ancho || 80}mm; margin:0; padding:${reciboConfig?.recibo_padding || 8}px; background:#fff;'>
                           <!-- Logo -->
                           <div style='text-align:center; margin-bottom:12px;'>
-                            <img src='/favicon.ico' alt='POLLOS CESAR' style='width:120px; height:120px;' onload='window.imageLoaded = true;' />
+                            <img src='/favicon.ico' alt='POLLOS CESAR' style='width:320px; height:320px;' onload='window.imageLoaded = true;' />
                           </div>
                           
                           <!-- Información del Negocio -->
@@ -1842,8 +1841,9 @@ export default function PuntoDeVentaView({
                             <div style='text-align:center; font-size:16px; font-weight:700;'>RECIBO DE VENTA</div>
                           </div>
                           
-                          <!-- Información del Cliente y Fecha -->
+                          <!-- Información del Cliente, Factura y Fecha -->
                           <div style='font-size:14px; margin-bottom:3px;'>Cliente: ${registro.cliente}</div>
+                          <div style='font-size:14px; margin-bottom:3px;'>Factura: ${facturaActual || ''}</div>
                           <div style='font-size:14px; margin-bottom:3px;'>Celular: ${registro.celular || 'N/A'}</div>
                           <div style='font-size:14px; margin-bottom:10px;'>Fecha: ${new Date().toLocaleString('es-HN', { timeZone: 'America/Tegucigalpa' })}</div>
                           
