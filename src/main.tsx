@@ -10,21 +10,25 @@ function Root() {
   const [showModal, setShowModal] = useState(false);
 
   // comprobar ahora: expuesto a window via evento
-  const checkNow = async () => {
+  const checkNow = async (): Promise<string | null> => {
     try {
       const res = await fetch('/version.json', { cache: 'no-store' });
-      if (!res.ok) return false;
+      if (!res.ok) return null;
       const j = await res.json();
       const ver = String(j.version || j?.ver || j?.v || '');
+      if (!ver) return null;
+      if (!currentVersion) {
+        // first load wasn't set; set current and do not prompt
+        setCurrentVersion(ver);
+        return null;
+      }
       if (ver && ver !== currentVersion) {
-        setAvailableVersion(ver);
-        setShowModal(true);
-        return true;
+        return ver;
       }
     } catch (e) {
       // ignore
     }
-    return false;
+    return null;
   };
 
   useEffect(() => {
@@ -46,11 +50,8 @@ function Root() {
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch('/version.json', { cache: 'no-store' });
-        if (!res.ok) return;
-        const j = await res.json();
-        const ver = String(j.version || j?.ver || j?.v || '');
-        if (ver && ver !== currentVersion) {
+        const ver = await checkNow();
+        if (ver) {
           setAvailableVersion(ver);
           setShowModal(true);
         }
@@ -68,7 +69,14 @@ function Root() {
   // Listen for manual check events from the page
   useEffect(() => {
     const onCheck = async () => {
-      await checkNow();
+      const ver = await checkNow();
+      if (ver) {
+        setAvailableVersion(ver);
+        setShowModal(true);
+        window.dispatchEvent(new CustomEvent('app:check-update-result', { detail: { updated: true, availableVersion: ver } }));
+      } else {
+        window.dispatchEvent(new CustomEvent('app:check-update-result', { detail: { updated: false } }));
+      }
     };
     window.addEventListener('app:check-update', onCheck as EventListener);
     return () => window.removeEventListener('app:check-update', onCheck as EventListener);

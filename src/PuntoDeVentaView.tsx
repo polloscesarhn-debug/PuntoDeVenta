@@ -169,6 +169,25 @@ export default function PuntoDeVentaView({
     })();
     return () => { canceled = true };
   }, []);
+
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateMessage, setUpdateMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      setCheckingUpdate(false);
+      const d = e?.detail || {};
+      if (d.updated) {
+        // there's an available update: main.tsx will show modal, but show a small note as well
+        setUpdateMessage(`Actualización disponible: ${d.availableVersion}`);
+      } else {
+        setUpdateMessage('El sistema está actualizado');
+        setTimeout(() => setUpdateMessage(null), 3000);
+      }
+    };
+    window.addEventListener('app:check-update-result', handler as EventListener);
+    return () => window.removeEventListener('app:check-update-result', handler as EventListener);
+  }, []);
   const [facturaActual, setFacturaActual] = useState<string>("");
   const [showPagoModal, setShowPagoModal] = useState(false);
   const [showClienteModal, setShowClienteModal] = useState(false);
@@ -2416,13 +2435,28 @@ export default function PuntoDeVentaView({
       {appVersion && (
         <div style={{ position: 'fixed', bottom: 10, left: 18, color: '#43a047', fontSize: 12, fontWeight: 700, zIndex: 12000, display: 'flex', gap: 8, alignItems: 'center' }}>
           <span>Versión: {appVersion}</span>
-          <button
-            onClick={() => window.dispatchEvent(new CustomEvent('app:check-update'))}
-            style={{ background: 'transparent', border: 'none', color: '#2e7d32', fontSize: 12, textDecoration: 'underline', cursor: 'pointer', padding: 0 }}
-            title="Buscar actualización ahora"
-          >
-            Buscar actualización
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              onClick={() => {
+                setCheckingUpdate(true);
+                setUpdateMessage(null);
+                window.dispatchEvent(new CustomEvent('app:check-update'));
+              }}
+              style={{ background: 'transparent', border: 'none', color: '#2e7d32', fontSize: 12, textDecoration: 'underline', cursor: 'pointer', padding: 0 }}
+              title="Buscar actualización ahora"
+            >
+              Buscar actualización
+            </button>
+            {checkingUpdate && (
+              <div style={{ width: 14, height: 14, border: '2px solid rgba(46,125,50,0.2)', borderTop: '2px solid #2e7d32', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+            )}
+            {updateMessage && (
+              <div style={{ background: '#e8f5e9', color: '#2e7d32', padding: '4px 8px', borderRadius: 8, fontSize: 12, fontWeight: 700 }}>
+                {updateMessage}
+              </div>
+            )}
+            <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+          </div>
         </div>
       )}
     </div >
