@@ -614,7 +614,7 @@ export default function PuntoDeVentaView({
         </div>
       )}
 
-      {/* Botón cerrar sesión, volver y interruptor de tema */}
+        {/* Botón de tema: muestra la acción disponible y cambia el texto al alternar */}
       <div
         style={{
           position: "absolute",
@@ -626,7 +626,6 @@ export default function PuntoDeVentaView({
           zIndex: 10000,
         }}
       >
-        {/* Interruptor de tema moderno */}
         <button
           onClick={() => {
             const next = theme === "lite" ? "dark" : "lite";
@@ -634,60 +633,18 @@ export default function PuntoDeVentaView({
             localStorage.setItem("theme", next);
           }}
           style={{
-            background: theme === "dark" ? "#222" : "#eee",
-            border: "2px solid #1976d2",
-            borderRadius: 20,
-            width: 54,
-            height: 28,
-            display: "flex",
-            alignItems: "center",
+            background: theme === "lite" ? "#1976d2" : "#333",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            padding: "8px 12px",
+            fontWeight: 700,
             cursor: "pointer",
-            position: "relative",
-            transition: "background 0.3s",
-            marginRight: 8,
+            boxShadow: "0 2px 10px rgba(0,0,0,0.12)",
           }}
-          title={theme === "lite" ? "Modo oscuro" : "Modo claro"}
+          title={theme === "lite" ? "Cambiar a modo oscuro" : "Cambiar a modo claro"}
         >
-          <span
-            style={{
-              position: "absolute",
-              left: theme === "lite" ? 4 : 26,
-              top: 4,
-              width: 20,
-              height: 20,
-              borderRadius: "50%",
-              background: theme === "dark" ? "#1976d2" : "#fbc02d",
-              boxShadow: "0 2px 6px #0002",
-              transition: "left 0.3s, background 0.3s",
-              display: "block",
-            }}
-          />
-          <span
-            style={{
-              position: "absolute",
-              right: 6,
-              top: 6,
-              fontSize: 14,
-              color: theme === "dark" ? "#fff" : "#222",
-              fontWeight: 700,
-              opacity: theme === "dark" ? 1 : 0.5,
-            }}
-          >
-            🌙
-          </span>
-          <span
-            style={{
-              position: "absolute",
-              left: 6,
-              top: 6,
-              fontSize: 14,
-              color: theme === "lite" ? "#fbc02d" : "#fff",
-              fontWeight: 700,
-              opacity: theme === "lite" ? 1 : 0.5,
-            }}
-          >
-            ☀️
-          </span>
+          {theme === "lite" ? "Modo oscuro" : "Modo claro"}
         </button>
         {usuarioActual?.rol === "admin" && (
           <button
@@ -1691,6 +1648,21 @@ export default function PuntoDeVentaView({
               }}
             />
             <div style={{ display: "flex", gap: 16, justifyContent: "center" }}>
+              <button
+                onClick={() => setShowClienteModal(false)}
+                style={{
+                  background: "#9e9e9e",
+                  color: "#fff",
+                  borderRadius: 8,
+                  border: "none",
+                  padding: "10px 20px",
+                  fontWeight: 600,
+                  fontSize: 16,
+                  cursor: 'pointer'
+                }}
+              >
+                Cancelar
+              </button>
               <button
                 onClick={() => {
                   if (nombreCliente.trim()) {
