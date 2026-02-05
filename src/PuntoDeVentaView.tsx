@@ -1480,7 +1480,6 @@ export default function PuntoDeVentaView({
                           .select("factura")
                           .eq("factura", facturaStr)
                           .eq("cajero", usuarioActual?.nombre)
-                          .eq("caja", cajaAsignada || "")
                           .limit(1);
 
                         const existeFactura = Array.isArray(factData) && factData.length > 0;
