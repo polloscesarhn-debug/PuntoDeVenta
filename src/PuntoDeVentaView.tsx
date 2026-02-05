@@ -49,7 +49,7 @@ export default function PuntoDeVentaView({
       | "facturasEmitidas"
       | "apertura"
       | "resultadosCaja"
-      | "cajaOperada"
+      | "cajaOperada",
   ) => void;
 }) {
   const [showCierre, setShowCierre] = useState(false);
@@ -120,23 +120,28 @@ export default function PuntoDeVentaView({
 
       const efectivoSum = (pagosEfectivo || []).reduce(
         (s: number, p: any) => s + parseFloat(p.monto || 0),
-        0
+        0,
       );
       const tarjetaSum = (pagosTarjeta || []).reduce(
         (s: number, p: any) => s + parseFloat(p.monto || 0),
-        0
+        0,
       );
       const transSum = (pagosTrans || []).reduce(
         (s: number, p: any) => s + parseFloat(p.monto || 0),
-        0
+        0,
       );
 
       const gastosSum = (gastosDia || []).reduce(
         (s: number, g: any) => s + parseFloat(g.monto || 0),
-        0
+        0,
       );
 
-      setResumenData({ efectivo: efectivoSum, tarjeta: tarjetaSum, transferencia: transSum, gastos: gastosSum });
+      setResumenData({
+        efectivo: efectivoSum,
+        tarjeta: tarjetaSum,
+        transferencia: transSum,
+        gastos: gastosSum,
+      });
     } catch (err) {
       console.error("Error al obtener resumen de caja:", err);
       setResumenData({ efectivo: 0, tarjeta: 0, transferencia: 0, gastos: 0 });
@@ -158,16 +163,18 @@ export default function PuntoDeVentaView({
     let canceled = false;
     (async () => {
       try {
-        const res = await fetch('/version.json', { cache: 'no-store' });
+        const res = await fetch("/version.json", { cache: "no-store" });
         if (!res.ok) return;
         const j = await res.json();
         if (canceled) return;
-        setAppVersion(String(j.version || ''));
+        setAppVersion(String(j.version || ""));
       } catch (e) {
         // ignore
       }
     })();
-    return () => { canceled = true };
+    return () => {
+      canceled = true;
+    };
   }, []);
 
   const [checkingUpdate, setCheckingUpdate] = useState(false);
@@ -181,12 +188,19 @@ export default function PuntoDeVentaView({
         // there's an available update: main.tsx will show modal, but show a small note as well
         setUpdateMessage(`Actualización disponible: ${d.availableVersion}`);
       } else {
-        setUpdateMessage('El sistema está actualizado');
+        setUpdateMessage("El sistema está actualizado");
         setTimeout(() => setUpdateMessage(null), 3000);
       }
     };
-    window.addEventListener('app:check-update-result', handler as EventListener);
-    return () => window.removeEventListener('app:check-update-result', handler as EventListener);
+    window.addEventListener(
+      "app:check-update-result",
+      handler as EventListener,
+    );
+    return () =>
+      window.removeEventListener(
+        "app:check-update-result",
+        handler as EventListener,
+      );
   }, []);
   const [facturaActual, setFacturaActual] = useState<string>("");
   const [showPagoModal, setShowPagoModal] = useState(false);
@@ -195,7 +209,9 @@ export default function PuntoDeVentaView({
   const [showEnvioModal, setShowEnvioModal] = useState(false);
   const [envioCliente, setEnvioCliente] = useState("");
   const [envioCelular, setEnvioCelular] = useState("");
-  const [envioTipoPago, setEnvioTipoPago] = useState<"Efectivo" | "Tarjeta" | "Transferencia">("Efectivo");
+  const [envioTipoPago, setEnvioTipoPago] = useState<
+    "Efectivo" | "Tarjeta" | "Transferencia"
+  >("Efectivo");
   const [envioCosto, setEnvioCosto] = useState<string>("0");
   const [savingEnvio, setSavingEnvio] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
@@ -207,7 +223,9 @@ export default function PuntoDeVentaView({
   const [showPedidosModal, setShowPedidosModal] = useState(false);
   const [pedidosList, setPedidosList] = useState<any[]>([]);
   const [pedidosLoading, setPedidosLoading] = useState(false);
-  const [pedidosProcessingId, setPedidosProcessingId] = useState<number | null>(null);
+  const [pedidosProcessingId, setPedidosProcessingId] = useState<number | null>(
+    null,
+  );
   const [gastoMonto, setGastoMonto] = useState<string>("");
   const [gastoMotivo, setGastoMotivo] = useState<string>("");
   const [gastoFactura, setGastoFactura] = useState<string>("");
@@ -239,7 +257,7 @@ export default function PuntoDeVentaView({
     if (stored) {
       try {
         setSeleccionados(JSON.parse(stored));
-      } catch { }
+      } catch {}
     }
   }, []);
   const [loading, setLoading] = useState(true);
@@ -380,7 +398,7 @@ export default function PuntoDeVentaView({
       let nuevos;
       if (existe) {
         nuevos = prev.map((p) =>
-          p.id === producto.id ? { ...p, cantidad: p.cantidad + 1 } : p
+          p.id === producto.id ? { ...p, cantidad: p.cantidad + 1 } : p,
         );
       } else {
         nuevos = [...prev, { ...producto, cantidad: 1, tipo: producto.tipo }];
@@ -398,7 +416,7 @@ export default function PuntoDeVentaView({
       const existe = prev.find((p) => p.id === id);
       if (existe && existe.cantidad > 1) {
         return prev.map((p) =>
-          p.id === id ? { ...p, cantidad: p.cantidad - 1 } : p
+          p.id === id ? { ...p, cantidad: p.cantidad - 1 } : p,
         );
       }
       return prev.filter((p) => p.id !== id);
@@ -428,7 +446,9 @@ export default function PuntoDeVentaView({
       // Usar la fecha local (YYYY-MM-DD) para evitar conversión a UTC
       const { day: fecha } = getLocalDayRange(); // devuelve 'YYYY-MM-DD' en hora local
       // Concatenar motivo y número de factura en la columna 'motivo'
-      const motivoCompleto = gastoMotivo.trim() + (gastoFactura ? ` | Factura: ${gastoFactura.trim()}` : "");
+      const motivoCompleto =
+        gastoMotivo.trim() +
+        (gastoFactura ? ` | Factura: ${gastoFactura.trim()}` : "");
       // Determinar caja asignada (usar caiInfo o consultar si es necesario)
       let cajaAsignada = caiInfo?.caja_asignada;
       if (!cajaAsignada) {
@@ -471,7 +491,7 @@ export default function PuntoDeVentaView({
   // Calculate total
   const total = seleccionados.reduce(
     (sum, p) => sum + p.precio * p.cantidad,
-    0
+    0,
   );
 
   // Filter products by type
@@ -557,7 +577,7 @@ export default function PuntoDeVentaView({
             color: online ? "#43a047" : "#d32f2f",
             fontWeight: 700,
             fontSize: 15,
-            whiteSpace: 'nowrap'
+            whiteSpace: "nowrap",
           }}
         >
           {online ? "Conectado" : "Sin conexión"}
@@ -574,10 +594,21 @@ export default function PuntoDeVentaView({
             maxWidth: "48vw",
             display: "inline-block",
           }}
-          title={caiInfo ? `${caiInfo.nombre_cajero} | Caja: ${caiInfo.caja_asignada}${facturaActual ? ` | Factura: ${facturaActual}` : ''}` : facturaActual ? `Factura: ${facturaActual}` : ''}
+          title={
+            caiInfo
+              ? `${caiInfo.nombre_cajero} | Caja: ${caiInfo.caja_asignada}${facturaActual ? ` | Factura: ${facturaActual}` : ""}`
+              : facturaActual
+                ? `Factura: ${facturaActual}`
+                : ""
+          }
         >
-          {caiInfo && `${caiInfo.nombre_cajero} | Caja: ${caiInfo.caja_asignada}`}
-          {caiInfo && facturaActual ? ` | Factura: ${facturaActual}` : (!caiInfo && facturaActual ? `Factura: ${facturaActual}` : "")}
+          {caiInfo &&
+            `${caiInfo.nombre_cajero} | Caja: ${caiInfo.caja_asignada}`}
+          {caiInfo && facturaActual
+            ? ` | Factura: ${facturaActual}`
+            : !caiInfo && facturaActual
+              ? `Factura: ${facturaActual}`
+              : ""}
         </span>
         {/* QZ Tray indicators removed */}
       </div>
@@ -600,8 +631,8 @@ export default function PuntoDeVentaView({
         >
           <div
             style={{
-              background: theme === 'lite' ? '#fff' : '#232526',
-              color: theme === 'lite' ? '#222' : '#fbc02d',
+              background: theme === "lite" ? "#fff" : "#232526",
+              color: theme === "lite" ? "#222" : "#fbc02d",
               borderRadius: 12,
               padding: 24,
               minWidth: 300,
@@ -609,21 +640,29 @@ export default function PuntoDeVentaView({
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ marginTop: 0, color: theme === 'lite' ? '#1976d2' : '#fbc02d' }}>Resumen de caja</h3>
+            <h3
+              style={{
+                marginTop: 0,
+                color: theme === "lite" ? "#1976d2" : "#fbc02d",
+              }}
+            >
+              Resumen de caja
+            </h3>
             {resumenLoading ? (
               <div style={{ padding: 12 }}>Cargando...</div>
             ) : resumenData ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <div>
-                  <strong>EFECTIVO:</strong> {(resumenData.efectivo - resumenData.gastos).toFixed(2)}
+                  <strong>EFECTIVO:</strong>{" "}
+                  {(resumenData.efectivo - resumenData.gastos).toFixed(2)}
                 </div>
 
-           
                 <div>
                   <strong>TARJETA:</strong> {resumenData.tarjeta.toFixed(2)}
                 </div>
                 <div>
-                  <strong>TRANSFERENCIA:</strong> {resumenData.transferencia.toFixed(2)}
+                  <strong>TRANSFERENCIA:</strong>{" "}
+                  {resumenData.transferencia.toFixed(2)}
                 </div>
                 <div>
                   <strong>GASTOS:</strong> {resumenData.gastos.toFixed(2)}
@@ -632,7 +671,13 @@ export default function PuntoDeVentaView({
             ) : (
               <div>No hay datos</div>
             )}
-            <div style={{ display: "flex", justifyContent: "center", marginTop: 16 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                marginTop: 16,
+              }}
+            >
               <button
                 onClick={() => setShowResumen(false)}
                 style={{
@@ -652,7 +697,7 @@ export default function PuntoDeVentaView({
         </div>
       )}
 
-        {/* Botón de tema: muestra la acción disponible y cambia el texto al alternar */}
+      {/* Botón de tema: muestra la acción disponible y cambia el texto al alternar */}
       <div
         style={{
           position: "absolute",
@@ -671,13 +716,17 @@ export default function PuntoDeVentaView({
           }}
           style={{
             background: theme === "dark" ? "#1976d2" : "transparent",
-            color: theme === "dark" ? "#fff" : theme === "lite" ? "#1976d2" : "#fff",
+            color:
+              theme === "dark" ? "#fff" : theme === "lite" ? "#1976d2" : "#fff",
             border: theme === "dark" ? "none" : "1px solid #1976d2",
             borderRadius: 8,
             padding: "8px 12px",
             fontWeight: 700,
             cursor: "pointer",
-            boxShadow: theme === "dark" ? "0 2px 10px rgba(0,0,0,0.12)" : "0 2px 8px rgba(25,118,210,0.12)",
+            boxShadow:
+              theme === "dark"
+                ? "0 2px 10px rgba(0,0,0,0.12)"
+                : "0 2px 8px rgba(25,118,210,0.12)",
           }}
           title="Activar modo oscuro"
         >
@@ -690,13 +739,22 @@ export default function PuntoDeVentaView({
           }}
           style={{
             background: theme === "lite" ? "#1976d2" : "transparent",
-            color: theme === "lite" ? "#fff" : theme === "dark" ? "#f5f5f5" : "#1976d2",
-            border: theme === "lite" ? "none" : "1px solid rgba(255,255,255,0.12)",
+            color:
+              theme === "lite"
+                ? "#fff"
+                : theme === "dark"
+                  ? "#f5f5f5"
+                  : "#1976d2",
+            border:
+              theme === "lite" ? "none" : "1px solid rgba(255,255,255,0.12)",
             borderRadius: 8,
             padding: "8px 12px",
             fontWeight: 700,
             cursor: "pointer",
-            boxShadow: theme === "lite" ? "0 2px 10px rgba(0,0,0,0.12)" : "0 2px 8px rgba(0,0,0,0.12)",
+            boxShadow:
+              theme === "lite"
+                ? "0 2px 10px rgba(0,0,0,0.12)"
+                : "0 2px 8px rgba(0,0,0,0.12)",
           }}
           title="Activar modo claro"
         >
@@ -740,7 +798,9 @@ export default function PuntoDeVentaView({
           Registrar cierre de caja
         </button>
         {/* Botón visible de Resumen de caja debajo del botón 'Registrar cierre de caja' */}
-        <div style={{ display: "flex", justifyContent: "center", marginTop: 12 }}>
+        <div
+          style={{ display: "flex", justifyContent: "center", marginTop: 12 }}
+        >
           <button
             style={{
               fontSize: 16,
@@ -759,7 +819,9 @@ export default function PuntoDeVentaView({
         </div>
 
         {/* Botón Registrar gasto debajo del Resumen de caja: abre modal */}
-        <div style={{ display: "flex", justifyContent: "center", marginTop: 8 }}>
+        <div
+          style={{ display: "flex", justifyContent: "center", marginTop: 8 }}
+        >
           <button
             onClick={() => {
               // Abrir modal de gasto sin prellenar número de factura (entrada manual)
@@ -770,7 +832,10 @@ export default function PuntoDeVentaView({
               fontSize: 16,
               padding: "10px 22px",
               borderRadius: 8,
-              background: theme === "lite" ? "rgba(211,47,47,0.95)" : "rgba(183,28,28,0.95)",
+              background:
+                theme === "lite"
+                  ? "rgba(211,47,47,0.95)"
+                  : "rgba(183,28,28,0.95)",
               color: "#fff",
               fontWeight: 700,
               border: "none",
@@ -787,14 +852,14 @@ export default function PuntoDeVentaView({
               setPedidosLoading(true);
               try {
                 const { data, error } = await supabase
-                  .from('pedidos_envio')
-                  .select('*')
-                  .eq('cajero_id', usuarioActual?.id)
-                  .order('created_at', { ascending: false })
+                  .from("pedidos_envio")
+                  .select("*")
+                  .eq("cajero_id", usuarioActual?.id)
+                  .order("created_at", { ascending: false })
                   .limit(100);
                 if (!error) setPedidosList(data || []);
                 else {
-                  console.error('Error cargando pedidos:', error);
+                  console.error("Error cargando pedidos:", error);
                   setPedidosList([]);
                 }
               } catch (e) {
@@ -806,13 +871,13 @@ export default function PuntoDeVentaView({
             }}
             style={{
               fontSize: 16,
-              padding: '10px 22px',
+              padding: "10px 22px",
               borderRadius: 8,
-              background: '#388e3c',
-              color: '#fff',
+              background: "#388e3c",
+              color: "#fff",
               fontWeight: 700,
-              border: 'none',
-              cursor: 'pointer',
+              border: "none",
+              cursor: "pointer",
               marginLeft: 12,
             }}
           >
@@ -849,11 +914,20 @@ export default function PuntoDeVentaView({
                   .lte("fecha", end);
                 if (cierresHoy && cierresHoy.length > 0) {
                   const cierre = cierresHoy[0];
-                  if (cierre.diferencia !== 0 && cierre.observacion === "sin aclarar") {
+                  if (
+                    cierre.diferencia !== 0 &&
+                    cierre.observacion === "sin aclarar"
+                  ) {
                     setView("resultadosCaja");
-                  } else if (cierre.diferencia !== 0 && cierre.observacion === "aclarado") {
+                  } else if (
+                    cierre.diferencia !== 0 &&
+                    cierre.observacion === "aclarado"
+                  ) {
                     setView("cajaOperada");
-                  } else if (cierre.diferencia === 0 && cierre.observacion === "cuadrado") {
+                  } else if (
+                    cierre.diferencia === 0 &&
+                    cierre.observacion === "cuadrado"
+                  ) {
                     setView("cajaOperada");
                   } else {
                     setView("resultadosCaja");
@@ -912,22 +986,26 @@ export default function PuntoDeVentaView({
               .maybeSingle();
             // Comanda
             const comandaHtml = `
-              <div style='font-family:monospace; width:${etiquetaConfig?.etiqueta_ancho || 80
-              }mm; margin:0; padding:${etiquetaConfig?.etiqueta_padding || 8
+              <div style='font-family:monospace; width:${
+                etiquetaConfig?.etiqueta_ancho || 80
+              }mm; margin:0; padding:${
+                etiquetaConfig?.etiqueta_padding || 8
               }px;'>
-                <div style='font-size:${etiquetaConfig?.etiqueta_fontsize || 24
-              }px; font-weight:800; color:#000; text-align:center; margin-bottom:6px;'>${etiquetaConfig?.etiqueta_comanda || "COMANDA COCINA"
-              }</div>
+                <div style='font-size:${
+                  etiquetaConfig?.etiqueta_fontsize || 24
+                }px; font-weight:800; color:#000; text-align:center; margin-bottom:6px;'>${
+                  etiquetaConfig?.etiqueta_comanda || "COMANDA COCINA"
+                }</div>
                 <div style='font-size:20px; font-weight:800; color:#000; text-align:center; margin-bottom:12px;'>Cliente: <b>${nombreCliente}</b></div>
-                <div style='font-size:14px; font-weight:600; color:#222; text-align:center; margin-bottom:6px;'>Factura: ${facturaActual || ''}</div>
+                <div style='font-size:14px; font-weight:600; color:#222; text-align:center; margin-bottom:6px;'>Factura: ${facturaActual || ""}</div>
                 <ul style='list-style:none; padding:0; margin-bottom:0;'>
                   ${seleccionados
-                .filter((p) => p.tipo === "comida")
-                .map(
-                  (p) =>
-                    `<li style='font-size:${etiquetaConfig?.etiqueta_fontsize || 20}px; margin-bottom:6px; padding-bottom:8px; text-align:left; border-bottom:1px solid #000;'><div style="display:flex; justify-content:space-between; align-items:center;"><span style='font-weight:700;'>${p.nombre}</span><span>L ${p.precio.toFixed(2)} x${p.cantidad}</span></div></li>`
-                )
-                .join("")}
+                    .filter((p) => p.tipo === "comida")
+                    .map(
+                      (p) =>
+                        `<li style='font-size:${etiquetaConfig?.etiqueta_fontsize || 20}px; margin-bottom:6px; padding-bottom:8px; text-align:left; border-bottom:1px solid #000;'><div style="display:flex; justify-content:space-between; align-items:center;"><span style='font-weight:700;'>${p.nombre}</span><span>L ${p.precio.toFixed(2)} x${p.cantidad}</span></div></li>`,
+                    )
+                    .join("")}
                 </ul>
               </div>
             `;
@@ -944,10 +1022,14 @@ export default function PuntoDeVentaView({
             }, 0);
             const isv15Recibo = seleccionados
               .filter((p) => p.tipo === "comida")
-              .reduce((sum, p) => sum + (p.precio - p.precio / 1.15) * p.cantidad, 0);
+              .reduce(
+                (sum, p) => sum + (p.precio - p.precio / 1.15) * p.cantidad,
+                0,
+              );
 
             const comprobanteHtml = `
-              <div style='font-family:monospace; width:${reciboConfig?.recibo_ancho || 80
+              <div style='font-family:monospace; width:${
+                reciboConfig?.recibo_ancho || 80
               }mm; margin:0; padding:${reciboConfig?.recibo_padding || 8}px; background:#fff;'>
                 <!-- Logo -->
                 <div style='text-align:center; margin-bottom:12px;'>
@@ -968,8 +1050,8 @@ export default function PuntoDeVentaView({
                 
                 <!-- Información del Cliente, Factura y Fecha -->
                 <div style='font-size:14px; margin-bottom:3px;'>Cliente: ${nombreCliente}</div>
-                <div style='font-size:14px; margin-bottom:3px;'>Factura: ${facturaActual || ''}</div>
-                <div style='font-size:14px; margin-bottom:10px;'>Fecha: ${new Date().toLocaleString('es-HN', { timeZone: 'America/Tegucigalpa' })}</div>
+                <div style='font-size:14px; margin-bottom:3px;'>Factura: ${facturaActual || ""}</div>
+                <div style='font-size:14px; margin-bottom:10px;'>Fecha: ${new Date().toLocaleString("es-HN", { timeZone: "America/Tegucigalpa" })}</div>
                 
                 <!-- Tabla de Productos -->
                 <div style='border-top:1px dashed #000; border-bottom:1px dashed #000; padding:6px 0; margin-bottom:10px;'>
@@ -984,16 +1066,16 @@ export default function PuntoDeVentaView({
                     </thead>
                     <tbody>
                       ${seleccionados
-                .map(
-                  (p) =>
-                    `<tr>
+                        .map(
+                          (p) =>
+                            `<tr>
                               <td style='padding:4px 0;'>${p.cantidad}</td>
                               <td style='padding:4px 0;'>${p.nombre}</td>
                               <td style='text-align:right; padding:4px 0;'>L${p.precio.toFixed(2)}</td>
                               <td style='text-align:right; padding:4px 0;'>L${(p.precio * p.cantidad).toFixed(2)}</td>
-                            </tr>`
-                )
-                .join("")}
+                            </tr>`,
+                        )
+                        .join("")}
                     </tbody>
                   </table>
                 </div>
@@ -1049,7 +1131,7 @@ export default function PuntoDeVentaView({
                 const img = new Image();
                 img.onload = () => resolve(true);
                 img.onerror = () => resolve(false); // Continuar aunque falle
-                img.src = '/favicon.ico';
+                img.src = "/favicon.ico";
                 // Timeout de seguridad de 2 segundos
                 setTimeout(() => resolve(false), 2000);
               });
@@ -1101,17 +1183,17 @@ export default function PuntoDeVentaView({
                 .filter((p) => p.tipo === "comida")
                 .reduce(
                   (sum, p) => sum + (p.precio - p.precio / 1.15) * p.cantidad,
-                  0
+                  0,
                 );
               const isv18 = seleccionados
                 .filter((p) => p.tipo === "bebida")
                 .reduce(
                   (sum, p) => sum + (p.precio - p.precio / 1.18) * p.cantidad,
-                  0
+                  0,
                 );
               if (facturaActual === "Límite alcanzado") {
                 alert(
-                  "¡Se ha alcanzado el límite de facturas para este cajero!"
+                  "¡Se ha alcanzado el límite de facturas para este cajero!",
                 );
                 return;
               }
@@ -1131,7 +1213,7 @@ export default function PuntoDeVentaView({
                     precio: p.precio,
                     cantidad: p.cantidad,
                     tipo: p.tipo,
-                  }))
+                  })),
                 ),
                 sub_total: subTotal.toFixed(2),
                 isv_15: isv15.toFixed(2),
@@ -1169,9 +1251,7 @@ export default function PuntoDeVentaView({
           paddingTop: 32,
           paddingBottom: 8,
         }}
-      >
-      
-      </h1>
+      ></h1>
       {error && <p style={{ color: "red", textAlign: "center" }}>{error}</p>}
 
       <div
@@ -1294,7 +1374,7 @@ export default function PuntoDeVentaView({
                       src={p.imagen}
                       alt={p.nombre}
                       style={{
-                        width: '100%',
+                        width: "100%",
                         height: 140,
                         objectFit: "cover",
                         borderRadius: 16,
@@ -1317,7 +1397,7 @@ export default function PuntoDeVentaView({
                   <div
                     style={{
                       fontSize: 18,
-                      color: theme === 'dark' ? '#fbc02d' : '#333',
+                      color: theme === "dark" ? "#fbc02d" : "#333",
                       textAlign: "center",
                       marginBottom: 8,
                     }}
@@ -1369,9 +1449,23 @@ export default function PuntoDeVentaView({
               No hay productos seleccionados
             </p>
           ) : (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div
+              style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+              }}
+            >
               {/* Botones principales arriba de la tabla */}
-              <div style={{ display: "flex", gap: 12, justifyContent: "center", marginBottom: 12 }}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 12,
+                  justifyContent: "center",
+                  marginBottom: 12,
+                }}
+              >
                 <button
                   onClick={limpiarSeleccion}
                   style={{
@@ -1407,7 +1501,7 @@ export default function PuntoDeVentaView({
                   onClick={async () => {
                     // Al tocar "Confirmar Pedido", simplemente abrir el modal de cliente
                     // La factura actual ya fue calculada correctamente al cargar
-                    console.log('[DEBUG] Confirmar Pedido clicked');
+                    console.log("[DEBUG] Confirmar Pedido clicked");
                     if (facturaActual === "Límite alcanzado") {
                       alert("¡Límite de facturas alcanzado!");
                       return;
@@ -1446,22 +1540,27 @@ export default function PuntoDeVentaView({
                 </button>
               </div>
 
-              <div style={{
-                display: 'flex',
-                padding: '10px 12px',
-                background: theme === 'lite' ? '#f5f5f5' : '#424242',
-                borderRadius: '8px 8px 0 0',
-                fontWeight: 'bold',
-                fontSize: 13,
-                color: theme === 'lite' ? '#666' : '#aaa',
-                marginBottom: 0,
-                borderBottom: theme === 'lite' ? '1px solid #e0e0e0' : '1px solid #555'
-              }}>
+              <div
+                style={{
+                  display: "flex",
+                  padding: "10px 12px",
+                  background: theme === "lite" ? "#f5f5f5" : "#424242",
+                  borderRadius: "8px 8px 0 0",
+                  fontWeight: "bold",
+                  fontSize: 13,
+                  color: theme === "lite" ? "#666" : "#aaa",
+                  marginBottom: 0,
+                  borderBottom:
+                    theme === "lite" ? "1px solid #e0e0e0" : "1px solid #555",
+                }}
+              >
                 <div style={{ flex: 2 }}>Producto</div>
-                <div style={{ flex: 1, textAlign: 'center' }}>Precio</div>
-                <div style={{ flex: 1, textAlign: 'center' }}>Cant.</div>
-                <div style={{ flex: 1, textAlign: 'right', paddingRight: 8 }}>Total</div>
-                <div style={{ width: 70, textAlign: 'center' }}></div>
+                <div style={{ flex: 1, textAlign: "center" }}>Precio</div>
+                <div style={{ flex: 1, textAlign: "center" }}>Cant.</div>
+                <div style={{ flex: 1, textAlign: "right", paddingRight: 8 }}>
+                  Total
+                </div>
+                <div style={{ width: 70, textAlign: "center" }}></div>
               </div>
               <ul
                 style={{
@@ -1470,10 +1569,11 @@ export default function PuntoDeVentaView({
                   margin: 0,
                   maxHeight: 380,
                   overflowY: "auto",
-                  background: theme === 'lite' ? '#fff' : '#333',
-                  borderRadius: '0 0 8px 8px',
-                  border: theme === 'lite' ? '1px solid #e0e0e0' : '1px solid #444',
-                  borderTop: 'none'
+                  background: theme === "lite" ? "#fff" : "#333",
+                  borderRadius: "0 0 8px 8px",
+                  border:
+                    theme === "lite" ? "1px solid #e0e0e0" : "1px solid #444",
+                  borderTop: "none",
                 }}
               >
                 {seleccionados.map((p, index) => (
@@ -1481,21 +1581,40 @@ export default function PuntoDeVentaView({
                     key={p.id}
                     style={{
                       display: "flex",
-                      flexWrap: 'wrap',
+                      flexWrap: "wrap",
                       alignItems: "center",
                       padding: "10px 12px",
                       gap: 8,
-                      borderBottom: theme === 'lite' ? '1px solid #f0f0f0' : '1px solid #444',
-                      background: index % 2 === 0 ? (theme === 'lite' ? '#fff' : '#333') : (theme === 'lite' ? '#fafafa' : '#383838'),
+                      borderBottom:
+                        theme === "lite"
+                          ? "1px solid #f0f0f0"
+                          : "1px solid #444",
+                      background:
+                        index % 2 === 0
+                          ? theme === "lite"
+                            ? "#fff"
+                            : "#333"
+                          : theme === "lite"
+                            ? "#fafafa"
+                            : "#383838",
                       color: theme === "lite" ? "#222" : "#f5f5f5",
                     }}
                   >
                     {/* Buttons first for easier reach on touch devices */}
-                    <div style={{ order: 0, display: "flex", gap: 6, alignItems: 'center', width: 72, flex: '0 0 72px' }}>
+                    <div
+                      style={{
+                        order: 0,
+                        display: "flex",
+                        gap: 6,
+                        alignItems: "center",
+                        width: 72,
+                        flex: "0 0 72px",
+                      }}
+                    >
                       <button
                         onClick={() =>
                           agregarProducto(
-                            productos.find((prod) => prod.id === p.id)!
+                            productos.find((prod) => prod.id === p.id)!,
                           )
                         }
                         style={{
@@ -1505,12 +1624,12 @@ export default function PuntoDeVentaView({
                           borderRadius: 4,
                           width: 32,
                           height: 32,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
                           cursor: "pointer",
                           fontSize: 16,
-                          lineHeight: 1
+                          lineHeight: 1,
                         }}
                         aria-label={`Agregar ${p.nombre}`}
                       >
@@ -1525,12 +1644,12 @@ export default function PuntoDeVentaView({
                           borderRadius: 4,
                           width: 32,
                           height: 32,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
                           cursor: "pointer",
                           fontSize: 16,
-                          lineHeight: 1
+                          lineHeight: 1,
                         }}
                         aria-label={`Eliminar ${p.nombre}`}
                       >
@@ -1538,19 +1657,59 @@ export default function PuntoDeVentaView({
                       </button>
                     </div>
 
-                    <div style={{ order: 1, flex: '2 1 140px', minWidth: 120, fontWeight: 600, fontSize: 14, color: theme === 'lite' ? '#1976d2' : '#64b5f6', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div
+                      style={{
+                        order: 1,
+                        flex: "2 1 140px",
+                        minWidth: 120,
+                        fontWeight: 600,
+                        fontSize: 14,
+                        color: theme === "lite" ? "#1976d2" : "#64b5f6",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
                       {p.nombre}
                     </div>
 
-                    <div style={{ order: 2, flex: '1 0 80px', minWidth: 80, textAlign: 'center', fontSize: 13 }}>
+                    <div
+                      style={{
+                        order: 2,
+                        flex: "1 0 80px",
+                        minWidth: 80,
+                        textAlign: "center",
+                        fontSize: 13,
+                      }}
+                    >
                       L {p.precio.toFixed(2)}
                     </div>
 
-                    <div style={{ order: 3, flex: '1 0 64px', minWidth: 64, textAlign: 'center', fontSize: 13, color: theme === 'lite' ? '#388e3c' : '#81c784', fontWeight: 600 }}>
+                    <div
+                      style={{
+                        order: 3,
+                        flex: "1 0 64px",
+                        minWidth: 64,
+                        textAlign: "center",
+                        fontSize: 13,
+                        color: theme === "lite" ? "#388e3c" : "#81c784",
+                        fontWeight: 600,
+                      }}
+                    >
                       x{p.cantidad}
                     </div>
 
-                    <div style={{ order: 4, flex: '1 0 90px', minWidth: 90, textAlign: 'right', fontWeight: 700, fontSize: 14, paddingRight: 8 }}>
+                    <div
+                      style={{
+                        order: 4,
+                        flex: "1 0 90px",
+                        minWidth: 90,
+                        textAlign: "right",
+                        fontWeight: 700,
+                        fontSize: 14,
+                        paddingRight: 8,
+                      }}
+                    >
                       L {(p.precio * p.cantidad).toFixed(2)}
                     </div>
                   </li>
@@ -1625,7 +1784,7 @@ export default function PuntoDeVentaView({
                   padding: "10px 20px",
                   fontWeight: 600,
                   fontSize: 16,
-                  cursor: 'pointer'
+                  cursor: "pointer",
                 }}
               >
                 Cancelar
@@ -1657,121 +1816,336 @@ export default function PuntoDeVentaView({
 
       {/* Modal para envío de pedido */}
       {showEnvioModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: theme === 'lite' ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-          <div style={{ background: theme === 'lite' ? '#fff' : '#1f2937', borderRadius: 14, padding: 18, minWidth: 360, maxWidth: 760, width: '92%', boxShadow: '0 12px 40px rgba(2,6,23,0.4)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <h3 style={{ margin: 0, color: theme === 'lite' ? '#1f2937' : '#f1f5f9', fontSize: 18 }}>pedidos</h3>
-              <button onClick={() => setShowEnvioModal(false)} style={{ background: 'transparent', border: 'none', color: theme === 'lite' ? '#374151' : '#cbd5e1', fontWeight: 700, cursor: 'pointer' }}>X</button>
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background:
+              theme === "lite" ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.55)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+          }}
+        >
+          <div
+            style={{
+              background: theme === "lite" ? "#fff" : "#1f2937",
+              borderRadius: 14,
+              padding: 18,
+              minWidth: 360,
+              maxWidth: 760,
+              width: "92%",
+              boxShadow: "0 12px 40px rgba(2,6,23,0.4)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 12,
+              }}
+            >
+              <h3
+                style={{
+                  margin: 0,
+                  color: theme === "lite" ? "#1f2937" : "#f1f5f9",
+                  fontSize: 18,
+                }}
+              >
+                pedidos
+              </h3>
+              <button
+                onClick={() => setShowEnvioModal(false)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: theme === "lite" ? "#374151" : "#cbd5e1",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                X
+              </button>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16, alignItems: 'start' }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 320px",
+                gap: 16,
+                alignItems: "start",
+              }}
+            >
               <div>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                   <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', fontSize: 13, color: theme === 'lite' ? '#374151' : '#e6eef8', marginBottom: 6 }}>Nombre del cliente</label>
-                    <input placeholder="Nombre cliente" value={envioCliente} onChange={e => setEnvioCliente(e.target.value)} className="form-input" style={{ width: '100%' }} />
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: 13,
+                        color: theme === "lite" ? "#374151" : "#e6eef8",
+                        marginBottom: 6,
+                      }}
+                    >
+                      Nombre del cliente
+                    </label>
+                    <input
+                      placeholder="Nombre cliente"
+                      value={envioCliente}
+                      onChange={(e) => setEnvioCliente(e.target.value)}
+                      className="form-input"
+                      style={{ width: "100%" }}
+                    />
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                   <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', fontSize: 13, color: theme === 'lite' ? '#374151' : '#e6eef8', marginBottom: 6 }}>Teléfono</label>
-                    <input placeholder="Número de teléfono" value={envioCelular} onChange={e => setEnvioCelular(e.target.value)} className="form-input" style={{ width: '100%' }} />
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: 13,
+                        color: theme === "lite" ? "#374151" : "#e6eef8",
+                        marginBottom: 6,
+                      }}
+                    >
+                      Teléfono
+                    </label>
+                    <input
+                      placeholder="Número de teléfono"
+                      value={envioCelular}
+                      onChange={(e) => setEnvioCelular(e.target.value)}
+                      className="form-input"
+                      style={{ width: "100%" }}
+                    />
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                   <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', fontSize: 13, color: theme === 'lite' ? '#374151' : '#e6eef8', marginBottom: 6 }}>Tipo de pago</label>
-                    <select value={envioTipoPago} onChange={e => setEnvioTipoPago(e.target.value as any)} className="form-input" style={{ width: '100%' }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: 13,
+                        color: theme === "lite" ? "#374151" : "#e6eef8",
+                        marginBottom: 6,
+                      }}
+                    >
+                      Tipo de pago
+                    </label>
+                    <select
+                      value={envioTipoPago}
+                      onChange={(e) => setEnvioTipoPago(e.target.value as any)}
+                      className="form-input"
+                      style={{ width: "100%" }}
+                    >
                       <option value="Efectivo">Efectivo</option>
                       <option value="Tarjeta">Tarjeta</option>
                       <option value="Transferencia">Transferencia</option>
                     </select>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                   <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', fontSize: 13, color: theme === 'lite' ? '#374151' : '#e6eef8', marginBottom: 6 }}>Costo de envío (L)</label>
-                    <input type="number" step="0.01" value={envioCosto} onChange={e => setEnvioCosto(e.target.value)} className="form-input" placeholder="0.00" style={{ width: '100%' }} />
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: 13,
+                        color: theme === "lite" ? "#374151" : "#e6eef8",
+                        marginBottom: 6,
+                      }}
+                    >
+                      Costo de envío (L)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={envioCosto}
+                      onChange={(e) => setEnvioCosto(e.target.value)}
+                      className="form-input"
+                      placeholder="0.00"
+                      style={{ width: "100%" }}
+                    />
                   </div>
                 </div>
-                <div style={{ marginTop: 6, fontSize: 13, color: theme === 'lite' ? '#374151' : '#cbd5e1' }}>
-                  <small>Completa los campos del cliente antes de guardar. El botón "Guardar" imprimirá el recibo y la comanda automáticamente (si hay impresora configurada).</small>
+                <div
+                  style={{
+                    marginTop: 6,
+                    fontSize: 13,
+                    color: theme === "lite" ? "#374151" : "#cbd5e1",
+                  }}
+                >
+                  <small>
+                    Completa los campos del cliente antes de guardar. El botón
+                    "Guardar" imprimirá el recibo y la comanda automáticamente
+                    (si hay impresora configurada).
+                  </small>
                 </div>
               </div>
-              <div style={{ background: theme === 'lite' ? '#f8fafc' : '#0b1220', borderRadius: 10, padding: 12, boxShadow: theme === 'lite' ? 'none' : '0 6px 18px rgba(0,0,0,0.6)' }}>
-                <div style={{ fontSize: 13, color: theme === 'lite' ? '#374151' : '#e6eef8', marginBottom: 8 }}>Resumen</div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0' }}><div>Subtotal</div><div>L {total.toFixed(2)}</div></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0' }}><div>Costo envío</div><div>L {Number(envioCosto || 0).toFixed(2)}</div></div>
-                <div style={{ height: 1, background: theme === 'lite' ? '#e6eef8' : '#12202e', margin: '8px 0' }} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: 16 }}><div>Total</div><div>L {(total + Number(envioCosto || 0)).toFixed(2)}</div></div>
-                <div style={{ marginTop: 12, display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                  <button onClick={() => setShowEnvioModal(false)} className="btn-secondary" style={{ padding: '10px 14px' }}>Cancelar</button>
-                  <button onClick={async () => {
-                    // Guardar pedido de envío
-                    setSavingEnvio(true);
-                    try {
-                      // determinar caja asignada
-                      let cajaAsignada = caiInfo?.caja_asignada;
-                      if (!cajaAsignada) {
-                        try {
-                          const { data: caiData } = await supabase.from('cai_facturas').select('caja_asignada').eq('cajero_id', usuarioActual?.id).single();
-                          cajaAsignada = caiData?.caja_asignada || '';
-                        } catch (e) { cajaAsignada = '' }
-                      }
-                      const productos = seleccionados.map(s => ({ id: s.id, nombre: s.nombre, precio: s.precio, cantidad: s.cantidad }));
-                      const registro = {
-                        productos,
-                        cajero_id: usuarioActual?.id,
-                        caja: cajaAsignada,
-                        fecha: formatToHondurasLocal(),
-                        cliente: envioCliente,
-                        celular: envioCelular,
-                        total: Number(total.toFixed(2)),
-                        costo_envio: parseFloat(envioCosto || '0'),
-                        tipo_pago: envioTipoPago,
-                      };
-                      const { error } = await supabase.from('pedidos_envio').insert([registro]);
-                      if (error) {
-                        console.error('Error insertando pedido de envío:', error);
-                        alert('Error al guardar pedido de envío');
-                      } else {
-                        setLastEnvioSaved(registro);
-                        setShowEnvioModal(false);
-                        // Imprimir usando la misma plantilla que recibo/comanda (intentar QZ Tray primero)
-                        try {
-                          const { data: etiquetaConfig } = await supabase
-                            .from('etiquetas_config')
-                            .select('*')
-                            .eq('nombre', 'default')
-                            .maybeSingle();
-                          const { data: reciboConfig } = await supabase
-                            .from('recibo_config')
-                            .select('*')
-                            .eq('nombre', 'default')
-                            .maybeSingle();
+              <div
+                style={{
+                  background: theme === "lite" ? "#f8fafc" : "#0b1220",
+                  borderRadius: 10,
+                  padding: 12,
+                  boxShadow:
+                    theme === "lite" ? "none" : "0 6px 18px rgba(0,0,0,0.6)",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: theme === "lite" ? "#374151" : "#e6eef8",
+                    marginBottom: 8,
+                  }}
+                >
+                  Resumen
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    padding: "6px 0",
+                  }}
+                >
+                  <div>Subtotal</div>
+                  <div>L {total.toFixed(2)}</div>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    padding: "6px 0",
+                  }}
+                >
+                  <div>Costo envío</div>
+                  <div>L {Number(envioCosto || 0).toFixed(2)}</div>
+                </div>
+                <div
+                  style={{
+                    height: 1,
+                    background: theme === "lite" ? "#e6eef8" : "#12202e",
+                    margin: "8px 0",
+                  }}
+                />
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontWeight: 800,
+                    fontSize: 16,
+                  }}
+                >
+                  <div>Total</div>
+                  <div>L {(total + Number(envioCosto || 0)).toFixed(2)}</div>
+                </div>
+                <div
+                  style={{
+                    marginTop: 12,
+                    display: "flex",
+                    gap: 8,
+                    justifyContent: "flex-end",
+                  }}
+                >
+                  <button
+                    onClick={() => setShowEnvioModal(false)}
+                    className="btn-secondary"
+                    style={{ padding: "10px 14px" }}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={async () => {
+                      // Guardar pedido de envío
+                      setSavingEnvio(true);
+                      try {
+                        // determinar caja asignada
+                        let cajaAsignada = caiInfo?.caja_asignada;
+                        if (!cajaAsignada) {
+                          try {
+                            const { data: caiData } = await supabase
+                              .from("cai_facturas")
+                              .select("caja_asignada")
+                              .eq("cajero_id", usuarioActual?.id)
+                              .single();
+                            cajaAsignada = caiData?.caja_asignada || "";
+                          } catch (e) {
+                            cajaAsignada = "";
+                          }
+                        }
+                        const productos = seleccionados.map((s) => ({
+                          id: s.id,
+                          nombre: s.nombre,
+                          precio: s.precio,
+                          cantidad: s.cantidad,
+                        }));
+                        const registro = {
+                          productos,
+                          cajero_id: usuarioActual?.id,
+                          caja: cajaAsignada,
+                          fecha: formatToHondurasLocal(),
+                          cliente: envioCliente,
+                          celular: envioCelular,
+                          total: Number(total.toFixed(2)),
+                          costo_envio: parseFloat(envioCosto || "0"),
+                          tipo_pago: envioTipoPago,
+                        };
+                        const { error } = await supabase
+                          .from("pedidos_envio")
+                          .insert([registro]);
+                        if (error) {
+                          console.error(
+                            "Error insertando pedido de envío:",
+                            error,
+                          );
+                          alert("Error al guardar pedido de envío");
+                        } else {
+                          setLastEnvioSaved(registro);
+                          setShowEnvioModal(false);
+                          // Imprimir usando la misma plantilla que recibo/comanda (intentar QZ Tray primero)
+                          try {
+                            const { data: etiquetaConfig } = await supabase
+                              .from("etiquetas_config")
+                              .select("*")
+                              .eq("nombre", "default")
+                              .maybeSingle();
+                            const { data: reciboConfig } = await supabase
+                              .from("recibo_config")
+                              .select("*")
+                              .eq("nombre", "default")
+                              .maybeSingle();
 
-                          const comandaHtml = `
+                            const comandaHtml = `
                         <div style='font-family:monospace; width:${etiquetaConfig?.etiqueta_ancho || 80}mm; margin:0; padding:${etiquetaConfig?.etiqueta_padding || 8}px;'>
-                          <div style='font-size:${etiquetaConfig?.etiqueta_fontsize || 24}px; font-weight:800; color:#000; text-align:center; margin-bottom:10px;'>${etiquetaConfig?.etiqueta_comanda || 'COMANDA COCINA'}</div>
+                          <div style='font-size:${etiquetaConfig?.etiqueta_fontsize || 24}px; font-weight:800; color:#000; text-align:center; margin-bottom:10px;'>${etiquetaConfig?.etiqueta_comanda || "COMANDA COCINA"}</div>
                           <div style='font-size:20px; font-weight:800; color:#000; text-align:center; margin-bottom:12px;'>Cliente: <b>${registro.cliente}</b></div>
-                          <div style='font-size:14px; font-weight:600; color:#222; text-align:center; margin-bottom:6px;'>Factura: ${facturaActual || ''}</div>
+                          <div style='font-size:14px; font-weight:600; color:#222; text-align:center; margin-bottom:6px;'>Factura: ${facturaActual || ""}</div>
                           <ul style='list-style:none; padding:0; margin-bottom:0;'>
-                            ${registro.productos.map((p: any) => `<li style='font-size:${etiquetaConfig?.etiqueta_fontsize || 20}px; margin-bottom:6px; padding-bottom:8px; text-align:left; border-bottom:1px solid #000;'><div style="display:flex; justify-content:space-between; align-items:center;"><span style='font-weight:700;'>${p.nombre}</span><span>L ${p.precio.toFixed(2)} x${p.cantidad}</span></div></li>`).join('')}
+                            ${registro.productos.map((p: any) => `<li style='font-size:${etiquetaConfig?.etiqueta_fontsize || 20}px; margin-bottom:6px; padding-bottom:8px; text-align:left; border-bottom:1px solid #000;'><div style="display:flex; justify-content:space-between; align-items:center;"><span style='font-weight:700;'>${p.nombre}</span><span>L ${p.precio.toFixed(2)} x${p.cantidad}</span></div></li>`).join("")}
                           </ul>
                         </div>
                       `;
 
+                            // Calcular subtotal e ISV 15% para pedido de envío
+                            const subtotalEnvio = registro.productos.reduce(
+                              (sum: number, p: any) => {
+                                // Asumimos que todos los productos son comida (tipo por defecto)
+                                return sum + (p.precio / 1.15) * p.cantidad;
+                              },
+                              0,
+                            );
+                            const isv15Envio = registro.productos.reduce(
+                              (sum: number, p: any) => {
+                                return (
+                                  sum +
+                                  (p.precio - p.precio / 1.15) * p.cantidad
+                                );
+                              },
+                              0,
+                            );
 
-                          // Calcular subtotal e ISV 15% para pedido de envío
-                          const subtotalEnvio = registro.productos.reduce((sum: number, p: any) => {
-                            // Asumimos que todos los productos son comida (tipo por defecto)
-                            return sum + (p.precio / 1.15) * p.cantidad;
-                          }, 0);
-                          const isv15Envio = registro.productos.reduce((sum: number, p: any) => {
-                            return sum + (p.precio - p.precio / 1.15) * p.cantidad;
-                          }, 0);
-
-
-                          const comprobanteHtml = `
+                            const comprobanteHtml = `
                         <div style='font-family:monospace; width:${reciboConfig?.recibo_ancho || 80}mm; margin:0; padding:${reciboConfig?.recibo_padding || 8}px; background:#fff;'>
                           <!-- Logo -->
                           <div style='text-align:center; margin-bottom:12px;'>
@@ -1792,9 +2166,9 @@ export default function PuntoDeVentaView({
                           
                           <!-- Información del Cliente, Factura y Fecha -->
                           <div style='font-size:14px; margin-bottom:3px;'>Cliente: ${registro.cliente}</div>
-                          <div style='font-size:14px; margin-bottom:3px;'>Factura: ${facturaActual || ''}</div>
-                          <div style='font-size:14px; margin-bottom:3px;'>Celular: ${registro.celular || 'N/A'}</div>
-                          <div style='font-size:14px; margin-bottom:10px;'>Fecha: ${new Date().toLocaleString('es-HN', { timeZone: 'America/Tegucigalpa' })}</div>
+                          <div style='font-size:14px; margin-bottom:3px;'>Factura: ${facturaActual || ""}</div>
+                          <div style='font-size:14px; margin-bottom:3px;'>Celular: ${registro.celular || "N/A"}</div>
+                          <div style='font-size:14px; margin-bottom:10px;'>Fecha: ${new Date().toLocaleString("es-HN", { timeZone: "America/Tegucigalpa" })}</div>
                           
                           <!-- Tabla de Productos -->
                           <div style='border-top:1px dashed #000; border-bottom:1px dashed #000; padding:6px 0; margin-bottom:10px;'>
@@ -1808,12 +2182,16 @@ export default function PuntoDeVentaView({
                                 </tr>
                               </thead>
                               <tbody>
-                                ${registro.productos.map((p: any) => `<tr>
+                                ${registro.productos
+                                  .map(
+                                    (p: any) => `<tr>
                                   <td style='padding:4px 0;'>${p.cantidad}</td>
                                   <td style='padding:4px 0;'>${p.nombre}</td>
                                   <td style='text-align:right; padding:4px 0;'>L${p.precio.toFixed(2)}</td>
                                   <td style='text-align:right; padding:4px 0;'>L${(p.precio * p.cantidad).toFixed(2)}</td>
-                                </tr>`).join('')}
+                                </tr>`,
+                                  )
+                                  .join("")}
                               </tbody>
                             </table>
                           </div>
@@ -1850,8 +2228,7 @@ export default function PuntoDeVentaView({
                         </div>
                       `;
 
-
-                          const printHtml = `
+                            const printHtml = `
                         <html>
                           <head>
                             <title>Recibo y Comanda</title>
@@ -1868,62 +2245,78 @@ export default function PuntoDeVentaView({
                         </html>
                       `;
 
-                          // Precargar la imagen antes de imprimir
-                          const preloadImage = () => {
-                            return new Promise((resolve) => {
-                              const img = new Image();
-                              img.onload = () => resolve(true);
-                              img.onerror = () => resolve(false);
-                              img.src = '/favicon.ico';
-                              setTimeout(() => resolve(false), 2000);
-                            });
-                          };
+                            // Precargar la imagen antes de imprimir
+                            const preloadImage = () => {
+                              return new Promise((resolve) => {
+                                const img = new Image();
+                                img.onload = () => resolve(true);
+                                img.onerror = () => resolve(false);
+                                img.src = "/favicon.ico";
+                                setTimeout(() => resolve(false), 2000);
+                              });
+                            };
 
-                          // Print using browser fallback (QZ Tray integration removed)
-                          try {
-                            await preloadImage();
-                            const printWindow = window.open('', '', 'height=800,width=400');
-                            if (printWindow) {
-                              printWindow.document.write(printHtml);
-                              printWindow.document.close();
-                              printWindow.onload = () => {
-                                setTimeout(() => {
-                                  printWindow.focus();
-                                  printWindow.print();
-                                  printWindow.close();
-                                }, 500);
-                              };
+                            // Print using browser fallback (QZ Tray integration removed)
+                            try {
+                              await preloadImage();
+                              const printWindow = window.open(
+                                "",
+                                "",
+                                "height=800,width=400",
+                              );
+                              if (printWindow) {
+                                printWindow.document.write(printHtml);
+                                printWindow.document.close();
+                                printWindow.onload = () => {
+                                  setTimeout(() => {
+                                    printWindow.focus();
+                                    printWindow.print();
+                                    printWindow.close();
+                                  }, 500);
+                                };
+                              }
+                            } catch (err) {
+                              console.error(
+                                "Error imprimiendo pedido de envío:",
+                                err,
+                              );
+                              const printWindow = window.open(
+                                "",
+                                "",
+                                "height=800,width=400",
+                              );
+                              if (printWindow) {
+                                printWindow.document.write(printHtml);
+                                printWindow.document.close();
+                                printWindow.onload = () => {
+                                  setTimeout(() => {
+                                    printWindow.focus();
+                                    printWindow.print();
+                                    printWindow.close();
+                                  }, 500);
+                                };
+                              }
                             }
                           } catch (err) {
-                            console.error('Error imprimiendo pedido de envío:', err);
-                            const printWindow = window.open('', '', 'height=800,width=400');
-                            if (printWindow) {
-                              printWindow.document.write(printHtml);
-                              printWindow.document.close();
-                              printWindow.onload = () => {
-                                setTimeout(() => {
-                                  printWindow.focus();
-                                  printWindow.print();
-                                  printWindow.close();
-                                }, 500);
-                              };
-                            }
+                            console.error(
+                              "Error durante impresión de envío:",
+                              err,
+                            );
                           }
-
-                        } catch (err) {
-                          console.error('Error durante impresión de envío:', err);
+                          // limpiar seleccionados
+                          limpiarSeleccion();
                         }
-                        // limpiar seleccionados
-                        limpiarSeleccion();
+                      } catch (e) {
+                        console.error(e);
+                        alert("Error al guardar pedido de envío");
+                      } finally {
+                        setSavingEnvio(false);
                       }
-                    } catch (e) {
-                      console.error(e);
-                      alert('Error al guardar pedido de envío');
-                    } finally {
-                      setSavingEnvio(false);
-                    }
-                  }} className="btn-primary" disabled={savingEnvio || !envioCliente || !envioCelular}>
-                    {savingEnvio ? 'Guardando...' : 'Guardar'}
+                    }}
+                    className="btn-primary"
+                    disabled={savingEnvio || !envioCliente || !envioCelular}
+                  >
+                    {savingEnvio ? "Guardando..." : "Guardar"}
                   </button>
                 </div>
               </div>
@@ -1934,43 +2327,97 @@ export default function PuntoDeVentaView({
 
       {/* Modal de recibo para impresión */}
       {showReceiptModal && lastEnvioSaved && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: '#fff', zIndex: 100000, padding: 24, overflow: 'auto' }}>
-          <div style={{ maxWidth: 480, margin: '0 auto', fontFamily: 'monospace' }}>
-            <h2 style={{ textAlign: 'center', margin: 0 }}>pollos cesar</h2>
-            <p style={{ textAlign: 'center', marginTop: 4 }}>{lastEnvioSaved.fecha}</p>
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "#fff",
+            zIndex: 100000,
+            padding: 24,
+            overflow: "auto",
+          }}
+        >
+          <div
+            style={{ maxWidth: 480, margin: "0 auto", fontFamily: "monospace" }}
+          >
+            <h2 style={{ textAlign: "center", margin: 0 }}>pollos cesar</h2>
+            <p style={{ textAlign: "center", marginTop: 4 }}>
+              {lastEnvioSaved.fecha}
+            </p>
             <hr />
             <div>
-              <div><strong>Cajero:</strong> {usuarioActual?.nombre}</div>
-              <div><strong>Caja:</strong> {lastEnvioSaved.caja}</div>
-              <div><strong>Cliente:</strong> {lastEnvioSaved.cliente} - {lastEnvioSaved.celular}</div>
-              <div><strong>Pago:</strong> {lastEnvioSaved.tipo_pago}</div>
+              <div>
+                <strong>Cajero:</strong> {usuarioActual?.nombre}
+              </div>
+              <div>
+                <strong>Caja:</strong> {lastEnvioSaved.caja}
+              </div>
+              <div>
+                <strong>Cliente:</strong> {lastEnvioSaved.cliente} -{" "}
+                {lastEnvioSaved.celular}
+              </div>
+              <div>
+                <strong>Pago:</strong> {lastEnvioSaved.tipo_pago}
+              </div>
             </div>
             <hr />
             <div>
               {lastEnvioSaved.productos.map((p: any, idx: number) => (
-                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <div>{p.nombre} x{p.cantidad}</div>
+                <div
+                  key={idx}
+                  style={{ display: "flex", justifyContent: "space-between" }}
+                >
+                  <div>
+                    {p.nombre} x{p.cantidad}
+                  </div>
                   <div>L {(p.precio * p.cantidad).toFixed(2)}</div>
                 </div>
               ))}
             </div>
             <hr />
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
               <div>Subtotal:</div>
               <div>L {lastEnvioSaved.total.toFixed(2)}</div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
               <div>Costo envío:</div>
               <div>L {lastEnvioSaved.costo_envio.toFixed(2)}</div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, marginTop: 8 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontWeight: 800,
+                marginTop: 8,
+              }}
+            >
               <div>Total a pagar:</div>
-              <div>L {(lastEnvioSaved.total + lastEnvioSaved.costo_envio).toFixed(2)}</div>
+              <div>
+                L{" "}
+                {(lastEnvioSaved.total + lastEnvioSaved.costo_envio).toFixed(2)}
+              </div>
             </div>
             <hr />
-            <div style={{ textAlign: 'center', marginTop: 12 }}>
-              <button onClick={() => { setShowReceiptModal(false); window.print(); }} className="btn-primary">Imprimir</button>
-              <button onClick={() => setShowReceiptModal(false)} style={{ marginLeft: 12 }} className="btn-primary">Cerrar</button>
+            <div style={{ textAlign: "center", marginTop: 12 }}>
+              <button
+                onClick={() => {
+                  setShowReceiptModal(false);
+                  window.print();
+                }}
+                className="btn-primary"
+              >
+                Imprimir
+              </button>
+              <button
+                onClick={() => setShowReceiptModal(false)}
+                style={{ marginLeft: 12 }}
+                className="btn-primary"
+              >
+                Cerrar
+              </button>
             </div>
           </div>
         </div>
@@ -2003,7 +2450,13 @@ export default function PuntoDeVentaView({
           >
             <h3 style={{ marginTop: 0, color: "#d32f2f" }}>Sin conexión</h3>
             <p>No hay conexión. Revisa tu red e intenta de nuevo.</p>
-            <div style={{ display: "flex", justifyContent: "center", marginTop: 12 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                marginTop: 12,
+              }}
+            >
               <button
                 onClick={() => setShowNoConnectionModal(false)}
                 style={{
@@ -2027,53 +2480,137 @@ export default function PuntoDeVentaView({
       {showPedidosModal && (
         <div
           style={{
-            position: 'fixed',
+            position: "fixed",
             top: 0,
             left: 0,
-            width: '100vw',
-            height: '100vh',
-            background: 'rgba(0,0,0,0.4)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0,0,0,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
             zIndex: 120000,
           }}
           onClick={() => setShowPedidosModal(false)}
         >
           <div
             style={{
-              background: theme === 'lite' ? '#fff' : '#232526',
+              background: theme === "lite" ? "#fff" : "#232526",
               borderRadius: 12,
               padding: 16,
               minWidth: 320,
               maxWidth: 820,
-              maxHeight: '80vh',
-              overflow: 'auto',
-              color: theme === 'lite' ? '#222' : '#f5f5f5',
+              maxHeight: "80vh",
+              overflow: "auto",
+              color: theme === "lite" ? "#222" : "#f5f5f5",
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
               <h3 style={{ margin: 0 }}>Pedidos (últimos)</h3>
-              <button onClick={() => setShowPedidosModal(false)} className="btn-primary">Cerrar</button>
+              <button
+                onClick={() => setShowPedidosModal(false)}
+                className="btn-primary"
+              >
+                Cerrar
+              </button>
             </div>
             <div style={{ marginTop: 12 }}>
               {pedidosLoading ? (
-                <div style={{ textAlign: 'center', padding: 24 }}>Cargando...</div>
+                <div style={{ textAlign: "center", padding: 24 }}>
+                  Cargando...
+                </div>
               ) : pedidosList.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: 24 }}>No hay pedidos.</div>
+                <div style={{ textAlign: "center", padding: 24 }}>
+                  No hay pedidos.
+                </div>
               ) : (
-                <div style={{ overflowX: 'auto', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.1)', border: '1px solid #e0e0e0' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                <div
+                  style={{
+                    overflowX: "auto",
+                    borderRadius: 8,
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                    border: "1px solid #e0e0e0",
+                  }}
+                >
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      fontSize: 14,
+                    }}
+                  >
                     <thead>
-                      <tr style={{ background: '#1976d2', color: '#fff' }}>
-                        <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600 }}>Fecha</th>
-                        <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600 }}>Cliente</th>
-                        <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600 }}>Teléfono</th>
-                        <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600 }}>Total</th>
-                        <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600 }}>Envío</th>
-                        <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 600 }}>Pago</th>
-                        <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 600 }}>Acciones</th>
+                      <tr style={{ background: "#1976d2", color: "#fff" }}>
+                        <th
+                          style={{
+                            padding: "12px 16px",
+                            textAlign: "left",
+                            fontWeight: 600,
+                          }}
+                        >
+                          Fecha
+                        </th>
+                        <th
+                          style={{
+                            padding: "12px 16px",
+                            textAlign: "left",
+                            fontWeight: 600,
+                          }}
+                        >
+                          Cliente
+                        </th>
+                        <th
+                          style={{
+                            padding: "12px 16px",
+                            textAlign: "left",
+                            fontWeight: 600,
+                          }}
+                        >
+                          Teléfono
+                        </th>
+                        <th
+                          style={{
+                            padding: "12px 16px",
+                            textAlign: "right",
+                            fontWeight: 600,
+                          }}
+                        >
+                          Total
+                        </th>
+                        <th
+                          style={{
+                            padding: "12px 16px",
+                            textAlign: "right",
+                            fontWeight: 600,
+                          }}
+                        >
+                          Envío
+                        </th>
+                        <th
+                          style={{
+                            padding: "12px 16px",
+                            textAlign: "center",
+                            fontWeight: 600,
+                          }}
+                        >
+                          Pago
+                        </th>
+                        <th
+                          style={{
+                            padding: "12px 16px",
+                            textAlign: "center",
+                            fontWeight: 600,
+                          }}
+                        >
+                          Acciones
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2081,88 +2618,199 @@ export default function PuntoDeVentaView({
                         <tr
                           key={p.id}
                           style={{
-                            borderBottom: '1px solid #eee',
-                            background: index % 2 === 0 ? '#fff' : '#f9f9f9'
+                            borderBottom: "1px solid #eee",
+                            background: index % 2 === 0 ? "#fff" : "#f9f9f9",
                           }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = '#e3f2fd'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = index % 2 === 0 ? '#fff' : '#f9f9f9'}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.background = "#e3f2fd")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.background =
+                              index % 2 === 0 ? "#fff" : "#f9f9f9")
+                          }
                         >
-                          <td style={{ padding: '12px 16px', color: '#444' }}>{p.fecha}</td>
-                          <td style={{ padding: '12px 16px', fontWeight: 500 }}>{p.cliente}</td>
-                          <td style={{ padding: '12px 16px', color: '#666' }}>{p.celular}</td>
-                          <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: '#2e7d32' }}>L {Number(p.total || 0).toFixed(2)}</td>
-                          <td style={{ padding: '12px 16px', textAlign: 'right', color: '#666' }}>L {Number(p.costo_envio || 0).toFixed(2)}</td>
-                          <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                            <span style={{
-                              padding: '4px 8px',
-                              borderRadius: 12,
-                              fontSize: 12,
-                              background: p.tipo_pago === 'Efectivo' ? '#e8f5e9' : '#e3f2fd',
-                              color: p.tipo_pago === 'Efectivo' ? '#2e7d32' : '#1565c0',
-                              border: `1px solid ${p.tipo_pago === 'Efectivo' ? '#c8e6c9' : '#bbdefb'}`
-                            }}>
+                          <td style={{ padding: "12px 16px", color: "#444" }}>
+                            {p.fecha}
+                          </td>
+                          <td style={{ padding: "12px 16px", fontWeight: 500 }}>
+                            {p.cliente}
+                          </td>
+                          <td style={{ padding: "12px 16px", color: "#666" }}>
+                            {p.celular}
+                          </td>
+                          <td
+                            style={{
+                              padding: "12px 16px",
+                              textAlign: "right",
+                              fontWeight: 600,
+                              color: "#2e7d32",
+                            }}
+                          >
+                            L {Number(p.total || 0).toFixed(2)}
+                          </td>
+                          <td
+                            style={{
+                              padding: "12px 16px",
+                              textAlign: "right",
+                              color: "#666",
+                            }}
+                          >
+                            L {Number(p.costo_envio || 0).toFixed(2)}
+                          </td>
+                          <td
+                            style={{
+                              padding: "12px 16px",
+                              textAlign: "center",
+                            }}
+                          >
+                            <span
+                              style={{
+                                padding: "4px 8px",
+                                borderRadius: 12,
+                                fontSize: 12,
+                                background:
+                                  p.tipo_pago === "Efectivo"
+                                    ? "#e8f5e9"
+                                    : "#e3f2fd",
+                                color:
+                                  p.tipo_pago === "Efectivo"
+                                    ? "#2e7d32"
+                                    : "#1565c0",
+                                border: `1px solid ${p.tipo_pago === "Efectivo" ? "#c8e6c9" : "#bbdefb"}`,
+                              }}
+                            >
                               {p.tipo_pago}
                             </span>
                           </td>
-                          <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                          <td
+                            style={{
+                              padding: "12px 16px",
+                              textAlign: "center",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: 8,
+                                justifyContent: "center",
+                              }}
+                            >
                               <button
                                 onClick={async () => {
-                                  if (!confirm('¿Eliminar pedido?')) return;
+                                  if (!confirm("¿Eliminar pedido?")) return;
                                   setPedidosProcessingId(p.id);
                                   try {
-                                    const { error } = await supabase.from('pedidos_envio').delete().eq('id', p.id);
+                                    const { error } = await supabase
+                                      .from("pedidos_envio")
+                                      .delete()
+                                      .eq("id", p.id);
                                     if (error) throw error;
-                                    setPedidosList((prev) => prev.filter((x) => x.id !== p.id));
+                                    setPedidosList((prev) =>
+                                      prev.filter((x) => x.id !== p.id),
+                                    );
                                   } catch (err) {
-                                    console.error('Error eliminando pedido:', err);
-                                    alert('Error eliminando pedido');
+                                    console.error(
+                                      "Error eliminando pedido:",
+                                      err,
+                                    );
+                                    alert("Error eliminando pedido");
                                   } finally {
                                     setPedidosProcessingId(null);
                                   }
                                 }}
                                 disabled={pedidosProcessingId === p.id}
                                 style={{
-                                  background: '#ffebee',
-                                  color: '#d32f2f',
-                                  border: '1px solid #ffcdd2',
-                                  padding: '6px 12px',
+                                  background: "#ffebee",
+                                  color: "#d32f2f",
+                                  border: "1px solid #ffcdd2",
+                                  padding: "6px 12px",
                                   borderRadius: 6,
-                                  cursor: 'pointer',
+                                  cursor: "pointer",
                                   fontSize: 13,
                                   fontWeight: 500,
-                                  transition: 'all 0.2s'
+                                  transition: "all 0.2s",
                                 }}
                                 onMouseEnter={(e) => {
-                                  e.currentTarget.style.background = '#d32f2f';
-                                  e.currentTarget.style.color = '#fff';
+                                  e.currentTarget.style.background = "#d32f2f";
+                                  e.currentTarget.style.color = "#fff";
                                 }}
                                 onMouseLeave={(e) => {
-                                  e.currentTarget.style.background = '#ffebee';
-                                  e.currentTarget.style.color = '#d32f2f';
+                                  e.currentTarget.style.background = "#ffebee";
+                                  e.currentTarget.style.color = "#d32f2f";
                                 }}
                               >
-                                {pedidosProcessingId === p.id ? '...' : 'Eliminar'}
+                                {pedidosProcessingId === p.id
+                                  ? "..."
+                                  : "Eliminar"}
                               </button>
                               <button
                                 onClick={async () => {
-                                  if (facturaActual === 'Límite alcanzado') { alert('Límite de facturas alcanzado'); return; }
-                                  if (!confirm('Marcar como entregado y registrar cobro?')) return;
+                                  if (facturaActual === "Límite alcanzado") {
+                                    alert("Límite de facturas alcanzado");
+                                    return;
+                                  }
+                                  if (
+                                    !confirm(
+                                      "Marcar como entregado y registrar cobro?",
+                                    )
+                                  )
+                                    return;
                                   setPedidosProcessingId(p.id);
                                   try {
-                                    const productos = (p.productos || []).map((pp: any) => ({ id: pp.id, nombre: pp.nombre, precio: pp.precio, cantidad: pp.cantidad, tipo: pp.tipo || 'comida' }));
-                                    const subTotal = productos.reduce((sum: number, item: any) => {
-                                      if (item.tipo === 'comida') return sum + (item.precio / 1.15) * item.cantidad;
-                                      if (item.tipo === 'bebida') return sum + (item.precio / 1.18) * item.cantidad;
-                                      return sum + item.precio * item.cantidad;
-                                    }, 0);
-                                    const isv15 = productos.filter((it: any) => it.tipo === 'comida').reduce((s: number, it: any) => s + (it.precio - it.precio / 1.15) * it.cantidad, 0);
-                                    const isv18 = productos.filter((it: any) => it.tipo === 'bebida').reduce((s: number, it: any) => s + (it.precio - it.precio / 1.18) * it.cantidad, 0);
+                                    const productos = (p.productos || []).map(
+                                      (pp: any) => ({
+                                        id: pp.id,
+                                        nombre: pp.nombre,
+                                        precio: pp.precio,
+                                        cantidad: pp.cantidad,
+                                        tipo: pp.tipo || "comida",
+                                      }),
+                                    );
+                                    const subTotal = productos.reduce(
+                                      (sum: number, item: any) => {
+                                        if (item.tipo === "comida")
+                                          return (
+                                            sum +
+                                            (item.precio / 1.15) * item.cantidad
+                                          );
+                                        if (item.tipo === "bebida")
+                                          return (
+                                            sum +
+                                            (item.precio / 1.18) * item.cantidad
+                                          );
+                                        return (
+                                          sum + item.precio * item.cantidad
+                                        );
+                                      },
+                                      0,
+                                    );
+                                    const isv15 = productos
+                                      .filter((it: any) => it.tipo === "comida")
+                                      .reduce(
+                                        (s: number, it: any) =>
+                                          s +
+                                          (it.precio - it.precio / 1.15) *
+                                            it.cantidad,
+                                        0,
+                                      );
+                                    const isv18 = productos
+                                      .filter((it: any) => it.tipo === "bebida")
+                                      .reduce(
+                                        (s: number, it: any) =>
+                                          s +
+                                          (it.precio - it.precio / 1.18) *
+                                            it.cantidad,
+                                        0,
+                                      );
                                     const venta = {
                                       fecha_hora: formatToHondurasLocal(),
-                                      cajero: usuarioActual?.nombre || '',
-                                      caja: p.caja || caiInfo?.caja_asignada || '',
-                                      cai: caiInfo && caiInfo.cai ? caiInfo.cai : '',
+                                      cajero: usuarioActual?.nombre || "",
+                                      caja:
+                                        p.caja || caiInfo?.caja_asignada || "",
+                                      cai:
+                                        caiInfo && caiInfo.cai
+                                          ? caiInfo.cai
+                                          : "",
                                       factura: facturaActual,
                                       cliente: p.cliente || null,
                                       productos: JSON.stringify(productos),
@@ -2171,10 +2819,12 @@ export default function PuntoDeVentaView({
                                       isv_18: isv18.toFixed(2),
                                       total: Number(p.total || 0).toFixed(2),
                                     };
-                                    const { error: errFact } = await supabase.from('facturas').insert([venta]);
+                                    const { error: errFact } = await supabase
+                                      .from("facturas")
+                                      .insert([venta]);
                                     if (errFact) throw errFact;
                                     const pago = {
-                                      tipo: p.tipo_pago || 'Efectivo',
+                                      tipo: p.tipo_pago || "Efectivo",
                                       monto: Number(p.total || 0),
                                       recibido: Number(p.total || 0),
                                       cambio: 0,
@@ -2187,41 +2837,59 @@ export default function PuntoDeVentaView({
                                       cliente: p.cliente || null,
                                       factura_venta: facturaActual,
                                     };
-                                    const { error: errPago } = await supabase.from('pagos').insert([pago]);
+                                    const { error: errPago } = await supabase
+                                      .from("pagos")
+                                      .insert([pago]);
                                     if (errPago) throw errPago;
-                                    try { setFacturaActual((prev) => prev && prev !== 'Límite alcanzado' ? (parseInt(prev) + 1).toString() : prev); } catch { }
-                                    const { error: errDel } = await supabase.from('pedidos_envio').delete().eq('id', p.id);
+                                    try {
+                                      setFacturaActual((prev) =>
+                                        prev && prev !== "Límite alcanzado"
+                                          ? (parseInt(prev) + 1).toString()
+                                          : prev,
+                                      );
+                                    } catch {}
+                                    const { error: errDel } = await supabase
+                                      .from("pedidos_envio")
+                                      .delete()
+                                      .eq("id", p.id);
                                     if (errDel) throw errDel;
-                                    setPedidosList((prev) => prev.filter((x) => x.id !== p.id));
+                                    setPedidosList((prev) =>
+                                      prev.filter((x) => x.id !== p.id),
+                                    );
                                   } catch (err) {
-                                    console.error('Error procesando entrega y cobro:', err);
-                                    alert('Error procesando entrega y cobro');
+                                    console.error(
+                                      "Error procesando entrega y cobro:",
+                                      err,
+                                    );
+                                    alert("Error procesando entrega y cobro");
                                   } finally {
                                     setPedidosProcessingId(null);
                                   }
                                 }}
                                 disabled={pedidosProcessingId === p.id}
                                 style={{
-                                  background: '#e8f5e9',
-                                  color: '#2e7d32',
-                                  border: '1px solid #a5d6a7',
-                                  padding: '6px 12px',
+                                  background: "#e8f5e9",
+                                  color: "#2e7d32",
+                                  border: "1px solid #a5d6a7",
+                                  padding: "6px 12px",
                                   borderRadius: 6,
-                                  cursor: 'pointer',
+                                  cursor: "pointer",
                                   fontSize: 13,
                                   fontWeight: 500,
-                                  transition: 'all 0.2s'
+                                  transition: "all 0.2s",
                                 }}
                                 onMouseEnter={(e) => {
-                                  e.currentTarget.style.background = '#2e7d32';
-                                  e.currentTarget.style.color = '#fff';
+                                  e.currentTarget.style.background = "#2e7d32";
+                                  e.currentTarget.style.color = "#fff";
                                 }}
                                 onMouseLeave={(e) => {
-                                  e.currentTarget.style.background = '#e8f5e9';
-                                  e.currentTarget.style.color = '#2e7d32';
+                                  e.currentTarget.style.background = "#e8f5e9";
+                                  e.currentTarget.style.color = "#2e7d32";
                                 }}
                               >
-                                {pedidosProcessingId === p.id ? '...' : 'Entregado y Cobrado'}
+                                {pedidosProcessingId === p.id
+                                  ? "..."
+                                  : "Entregado y Cobrado"}
                               </button>
                             </div>
                           </td>
@@ -2231,155 +2899,237 @@ export default function PuntoDeVentaView({
                   </table>
                 </div>
               )}
-            </div >
-          </div >
-        </div >
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modal Registrar Gasto */}
-      {
-        showRegistrarGasto && (
+      {showRegistrarGasto && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0,0,0,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 120000,
+          }}
+          onClick={() => cerrarRegistrarGasto()}
+        >
           <div
             style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100vw",
-              height: "100vh",
-              background: "rgba(0,0,0,0.4)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 120000,
+              background: theme === "lite" ? "#fff" : "#232526",
+              borderRadius: 12,
+              padding: 20,
+              minWidth: 320,
+              boxShadow: "0 8px 32px #0003",
+              color: theme === "lite" ? "#222" : "#f5f5f5",
             }}
-            onClick={() => cerrarRegistrarGasto()}
+            onClick={(e) => e.stopPropagation()}
           >
+            <h3 style={{ marginTop: 0, color: "#d32f2f" }}>Registrar gasto</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="Monto"
+                value={gastoMonto}
+                onChange={(e) => setGastoMonto(e.target.value)}
+                style={{
+                  padding: 10,
+                  borderRadius: 8,
+                  border: "1px solid #ccc",
+                }}
+              />
+              <input
+                type="text"
+                placeholder="Motivo"
+                value={gastoMotivo}
+                onChange={(e) => setGastoMotivo(e.target.value)}
+                style={{
+                  padding: 10,
+                  borderRadius: 8,
+                  border: "1px solid #ccc",
+                }}
+              />
+              <input
+                type="text"
+                placeholder="Número de factura (opcional)"
+                value={gastoFactura}
+                onChange={(e) => setGastoFactura(e.target.value)}
+                style={{
+                  padding: 10,
+                  borderRadius: 8,
+                  border: "1px solid #ccc",
+                }}
+              />
+            </div>
             <div
               style={{
-                background: theme === "lite" ? "#fff" : "#232526",
-                borderRadius: 12,
-                padding: 20,
-                minWidth: 320,
-                boxShadow: "0 8px 32px #0003",
-                color: theme === "lite" ? "#222" : "#f5f5f5",
+                display: "flex",
+                gap: 12,
+                justifyContent: "center",
+                marginTop: 16,
               }}
-              onClick={(e) => e.stopPropagation()}
             >
-              <h3 style={{ marginTop: 0, color: "#d32f2f" }}>Registrar gasto</h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="Monto"
-                  value={gastoMonto}
-                  onChange={(e) => setGastoMonto(e.target.value)}
-                  style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
-                />
-                <input
-                  type="text"
-                  placeholder="Motivo"
-                  value={gastoMotivo}
-                  onChange={(e) => setGastoMotivo(e.target.value)}
-                  style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
-                />
-                <input
-                  type="text"
-                  placeholder="Número de factura (opcional)"
-                  value={gastoFactura}
-                  onChange={(e) => setGastoFactura(e.target.value)}
-                  style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
-                />
-              </div>
-              <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 16 }}>
-                <button
-                  onClick={() => cerrarRegistrarGasto()}
-                  style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#9e9e9e", color: "#fff", cursor: "pointer" }}
-                  disabled={guardandoGasto}
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={() => guardarGasto()}
-                  style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#d32f2f", color: "#fff", cursor: "pointer", fontWeight: 700 }}
-                  disabled={guardandoGasto}
-                >
-                  {guardandoGasto ? "Guardando..." : "Guardar gasto"}
-                </button>
-              </div>
+              <button
+                onClick={() => cerrarRegistrarGasto()}
+                style={{
+                  padding: "8px 18px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "#9e9e9e",
+                  color: "#fff",
+                  cursor: "pointer",
+                }}
+                disabled={guardandoGasto}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => guardarGasto()}
+                style={{
+                  padding: "8px 18px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "#d32f2f",
+                  color: "#fff",
+                  cursor: "pointer",
+                  fontWeight: 700,
+                }}
+                disabled={guardandoGasto}
+              >
+                {guardandoGasto ? "Guardando..." : "Guardar gasto"}
+              </button>
             </div>
           </div>
-        )
-      }
+        </div>
+      )}
 
       {/* Modal de éxito tras registrar gasto */}
-      {
-        showGastoSuccess && (
+      {showGastoSuccess && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0,0,0,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 130000,
+          }}
+          onClick={() => setShowGastoSuccess(false)}
+        >
           <div
             style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100vw",
-              height: "100vh",
-              background: "rgba(0,0,0,0.4)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 130000,
+              background: theme === "lite" ? "#fff" : "#232526",
+              borderRadius: 12,
+              padding: 20,
+              minWidth: 300,
+              boxShadow: "0 8px 32px #0003",
+              color: theme === "lite" ? "#222" : "#f5f5f5",
+              textAlign: "center",
             }}
-            onClick={() => setShowGastoSuccess(false)}
+            onClick={(e) => e.stopPropagation()}
           >
+            <h3 style={{ marginTop: 0, color: "#388e3c" }}>Éxito</h3>
+            <p style={{ marginTop: 8 }}>{gastoSuccessMessage}</p>
             <div
               style={{
-                background: theme === "lite" ? "#fff" : "#232526",
-                borderRadius: 12,
-                padding: 20,
-                minWidth: 300,
-                boxShadow: "0 8px 32px #0003",
-                color: theme === "lite" ? "#222" : "#f5f5f5",
-                textAlign: "center",
+                display: "flex",
+                justifyContent: "center",
+                marginTop: 16,
               }}
-              onClick={(e) => e.stopPropagation()}
             >
-              <h3 style={{ marginTop: 0, color: "#388e3c" }}>Éxito</h3>
-              <p style={{ marginTop: 8 }}>{gastoSuccessMessage}</p>
-              <div style={{ display: "flex", justifyContent: "center", marginTop: 16 }}>
-                <button
-                  onClick={() => setShowGastoSuccess(false)}
-                  style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#1976d2", color: "#fff", cursor: "pointer" }}
-                >
-                  Aceptar
-                </button>
-              </div>
+              <button
+                onClick={() => setShowGastoSuccess(false)}
+                style={{
+                  padding: "8px 18px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "#1976d2",
+                  color: "#fff",
+                  cursor: "pointer",
+                }}
+              >
+                Aceptar
+              </button>
             </div>
           </div>
-        )
-      }
+        </div>
+      )}
 
       {/* Modal para requerir factura */}
       {/* Eliminado el modal de confirmación de factura */}
 
       {/* Versión de la aplicación (texto pequeño en verde abajo) */}
       {appVersion && (
-        <div style={{ position: 'fixed', bottom: 10, left: 18, color: '#43a047', fontSize: 12, fontWeight: 700, zIndex: 12000, display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div
+          style={{
+            position: "fixed",
+            bottom: 10,
+            left: 18,
+            color: "#43a047",
+            fontSize: 12,
+            fontWeight: 700,
+            zIndex: 12000,
+            display: "flex",
+            gap: 8,
+            alignItems: "center",
+          }}
+        >
           <span>Versión: {appVersion}</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <button
               onClick={() => {
                 setCheckingUpdate(true);
                 setUpdateMessage(null);
-                window.dispatchEvent(new CustomEvent('app:check-update'));
+                window.dispatchEvent(new CustomEvent("app:check-update"));
               }}
-              style={{ background: 'transparent', border: 'none', color: '#2e7d32', fontSize: 12, textDecoration: 'underline', cursor: 'pointer', padding: 0 }}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#2e7d32",
+                fontSize: 12,
+                textDecoration: "underline",
+                cursor: "pointer",
+                padding: 0,
+              }}
               title="Buscar actualización ahora"
             >
               Buscar actualización
             </button>
             {checkingUpdate && (
-              <div style={{ width: 14, height: 14, border: '2px solid rgba(46,125,50,0.2)', borderTop: '2px solid #2e7d32', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+              <div
+                style={{
+                  width: 14,
+                  height: 14,
+                  border: "2px solid rgba(46,125,50,0.2)",
+                  borderTop: "2px solid #2e7d32",
+                  borderRadius: "50%",
+                  animation: "spin 1s linear infinite",
+                }}
+              />
             )}
             {updateMessage && (
-              <div style={{ background: '#e8f5e9', color: '#2e7d32', padding: '4px 8px', borderRadius: 8, fontSize: 12, fontWeight: 700 }}>
+              <div
+                style={{
+                  background: "#e8f5e9",
+                  color: "#2e7d32",
+                  padding: "4px 8px",
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 700,
+                }}
+              >
                 {updateMessage}
               </div>
             )}
@@ -2387,6 +3137,6 @@ export default function PuntoDeVentaView({
           </div>
         </div>
       )}
-    </div >
+    </div>
   );
 }

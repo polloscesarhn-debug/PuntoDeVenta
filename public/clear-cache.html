@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Limpiar Caché - Punto de Venta</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Limpiar Caché del Sistema</h1>
+        <p>Esta herramienta limpiará completamente el caché del navegador y service workers.</p>
+        <p><strong>Úsala si la aplicación no se actualiza correctamente.</strong></p>
+        
+        <button onclick="clearEverything()">Limpiar Todo y Recargar</button>
+        <button onclick="goToApp()">Ir a la Aplicación</button>
+        
+        <div id="status"></div>
+    </div>
+
+    <script>
+        async function clearEverything() {
+            const status = document.getElementById('status');
+            status.className = 'status info';
+            status.textContent = 'Limpiando caché...';
+
+            try {
+                // 1. Desregistrar todos los service workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const registration of registrations) {
+                        await registration.unregister();
+                    }
+                    status.textContent = `✓ ${registrations.length} service worker(s) eliminado(s)`;
+                }
+
+                // 2. Limpiar todos los cachés
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(
+                        cacheNames.map(cacheName => caches.delete(cacheName))
+                    );
+                    status.textContent += `\n✓ ${cacheNames.length} caché(s) eliminado(s)`;
+                }
+
+                // 3. Limpiar localStorage
+                localStorage.clear();
+                status.textContent += '\n✓ localStorage limpiado';
+
+                // 4. Limpiar sessionStorage
+                sessionStorage.clear();
+                status.textContent += '\n✓ sessionStorage limpiado';
+
+                status.className = 'status success';
+                status.textContent += '\n\n¡Limpieza completa! Redirigiendo...';
+
+                // 5. Redirigir a la app con cache buster
+                setTimeout(() => {
+                    const url = new URL(window.location.origin);
+                    url.searchParams.set('_cb', Date.now());
+                    window.location.href = url.toString();
+                }, 2000);
+
+            } catch (error) {
+                status.className = 'status error';
+                status.textContent = '❌ Error: ' + error.message;
+            }
+        }
+
+        function goToApp() {
+            const url = new URL(window.location.origin);
+            url.searchParams.set('_cb', Date.now());
+            window.location.href = url.toString();
+        }
+
+        // Auto-ejecutar si viene del parámetro
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('auto') === '1') {
+            clearEverything();
+        }
+    </script>
+</body>
+</html>
