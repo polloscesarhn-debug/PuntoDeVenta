@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pdv-cache-v1';
+const CACHE_NAME = 'pdv-cache-v2'; // Actualizado para forzar nueva instalación
 const PRECACHE_URLS = [
   '/',
   '/index.html',

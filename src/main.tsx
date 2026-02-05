@@ -52,17 +52,33 @@ function Root() {
       try {
         const ver = await checkNow();
         if (ver) {
-          setAvailableVersion(ver);
-          setShowModal(true);
+          // Auto-actualizar sin mostrar modal
+          console.log('[AUTO-UPDATE] Nueva versión detectada:', ver, '- Actualizando automáticamente...');
+          await autoUpdate();
         }
       } catch (e) {
         // ignore
       }
-    }, 60 * 1000); // check every 60s
+    }, 30 * 1000); // check every 30s
+
+    // También verificar cuando el usuario regresa a la pestaña
+    const handleFocus = async () => {
+      try {
+        const ver = await checkNow();
+        if (ver) {
+          console.log('[AUTO-UPDATE] Nueva versión detectada al regresar a la pestaña:', ver);
+          await autoUpdate();
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    window.addEventListener('focus', handleFocus);
 
     return () => {
       cancelled = true;
       clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
     };
   }, [currentVersion]);
 
@@ -71,8 +87,9 @@ function Root() {
     const onCheck = async () => {
       const ver = await checkNow();
       if (ver) {
-        setAvailableVersion(ver);
-        setShowModal(true);
+        // Auto-actualizar en verificación manual también
+        console.log('[AUTO-UPDATE] Verificación manual - Nueva versión detectada:', ver);
+        await autoUpdate();
         window.dispatchEvent(new CustomEvent('app:check-update-result', { detail: { updated: true, availableVersion: ver } }));
       } else {
         window.dispatchEvent(new CustomEvent('app:check-update-result', { detail: { updated: false } }));
@@ -82,7 +99,7 @@ function Root() {
     return () => window.removeEventListener('app:check-update', onCheck as EventListener);
   }, [currentVersion]);
 
-  const confirmUpdate = async () => {
+  const autoUpdate = async () => {
     // try to unregister service workers to ensure fresh files are loaded
     try {
       if ('serviceWorker' in navigator) {
@@ -106,6 +123,10 @@ function Root() {
     }
   };
 
+  const confirmUpdate = async () => {
+    await autoUpdate();
+  };
+
   const cancelUpdate = () => {
     // dismiss until next check
     setShowModal(false);
@@ -123,16 +144,33 @@ createRoot(document.getElementById('root')!).render(
   <Root />
 )
 
-// Keep existing SW message listener but do not auto-reload: instead show modal via interval check.
+// Auto-actualizar cuando el service worker detecte una nueva versión
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.addEventListener('message', (event) => {
+  navigator.serviceWorker.addEventListener('message', async (event) => {
     try {
       const data = event.data;
       if (data && data.type === 'NEW_VERSION_AVAILABLE') {
-        // show a browser confirm as fallback; user may have different UI
-        if (window.confirm('Nueva versión disponible. ¿Desea recargar para actualizar?')) {
-          window.location.reload();
-        }
+        console.log('[AUTO-UPDATE] Service Worker detectó nueva versión - Actualizando automáticamente...');
+        // Esperar un poco antes de recargar para dar tiempo a que se complete la carga
+        setTimeout(async () => {
+          try {
+            if ('serviceWorker' in navigator) {
+              const regs = await navigator.serviceWorker.getRegistrations();
+              for (const r of regs) {
+                try { await r.unregister(); } catch (e) { /* ignore */ }
+              }
+            }
+          } catch (e) {
+            // ignore
+          }
+          try {
+            const url = new URL(window.location.href);
+            url.searchParams.set('_cb', String(Date.now()));
+            window.location.href = url.toString();
+          } catch (e) {
+            window.location.reload();
+          }
+        }, 1000);
       }
     } catch (e) {
       // ignore
