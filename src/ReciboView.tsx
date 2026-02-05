@@ -43,7 +43,7 @@ const ReciboView: React.FC<ReciboViewProps> = ({ onBack }) => {
           .from("recibo_config")
           .select("*")
           .eq("nombre", "default")
-          .single();
+          .maybeSingle();
         
         if (data && !error) {
           setRecibo(data.recibo_texto || "");

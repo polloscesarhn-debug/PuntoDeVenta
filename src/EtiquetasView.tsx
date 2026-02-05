@@ -44,7 +44,7 @@ const EtiquetasView: React.FC<EtiquetasViewProps> = ({ onBack }) => {
           .from("etiquetas_config")
           .select("*")
           .eq("nombre", "default")
-          .single();
+          .maybeSingle();
         
         if (data && !error) {
           setComanda(data.etiqueta_comanda || "");

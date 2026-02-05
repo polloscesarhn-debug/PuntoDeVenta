@@ -904,12 +904,12 @@ export default function PuntoDeVentaView({
               .from("etiquetas_config")
               .select("*")
               .eq("nombre", "default")
-              .single();
+              .maybeSingle();
             const { data: reciboConfig } = await supabase
               .from("recibo_config")
               .select("*")
               .eq("nombre", "default")
-              .single();
+              .maybeSingle();
             // Comanda
             const comandaHtml = `
               <div style='font-family:monospace; width:${etiquetaConfig?.etiqueta_ancho || 80
@@ -1742,12 +1742,12 @@ export default function PuntoDeVentaView({
                             .from('etiquetas_config')
                             .select('*')
                             .eq('nombre', 'default')
-                            .single();
+                            .maybeSingle();
                           const { data: reciboConfig } = await supabase
                             .from('recibo_config')
                             .select('*')
                             .eq('nombre', 'default')
-                            .single();
+                            .maybeSingle();
 
                           const comandaHtml = `
                         <div style='font-family:monospace; width:${etiquetaConfig?.etiqueta_ancho || 80}mm; margin:0; padding:${etiquetaConfig?.etiqueta_padding || 8}px;'>
