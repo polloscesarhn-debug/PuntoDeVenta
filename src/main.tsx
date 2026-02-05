@@ -2,12 +2,9 @@ import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
-import UpdateModal from './UpdateModal'
 
 function Root() {
   const [currentVersion, setCurrentVersion] = useState<string | null>(null);
-  const [availableVersion, setAvailableVersion] = useState<string | null>(null);
-  const [showModal, setShowModal] = useState(false);
 
   // comprobar ahora: expuesto a window via evento
   const checkNow = async (): Promise<string | null> => {
@@ -90,7 +87,7 @@ function Root() {
         // Auto-actualizar en verificación manual también
         console.log('[AUTO-UPDATE] Verificación manual - Nueva versión detectada:', ver);
         await autoUpdate();
-        window.dispatchEvent(new CustomEvent('app:check-update-result', { detail: { updated: true, availableVersion: ver } }));
+        window.dispatchEvent(new CustomEvent('app:check-update-result', { detail: { updated: true } }));
       } else {
         window.dispatchEvent(new CustomEvent('app:check-update-result', { detail: { updated: false } }));
       }
@@ -123,19 +120,9 @@ function Root() {
     }
   };
 
-  const confirmUpdate = async () => {
-    await autoUpdate();
-  };
-
-  const cancelUpdate = () => {
-    // dismiss until next check
-    setShowModal(false);
-  };
-
   return (
     <StrictMode>
       <App />
-      <UpdateModal open={showModal} version={availableVersion} onConfirm={confirmUpdate} onCancel={cancelUpdate} />
     </StrictMode>
   )
 }
