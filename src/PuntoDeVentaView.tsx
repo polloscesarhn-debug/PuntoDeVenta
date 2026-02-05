@@ -1407,6 +1407,7 @@ export default function PuntoDeVentaView({
                   disabled={seleccionados.length === 0 || checkingFactura}
                   onClick={async () => {
                     // Al tocar "Confirmar Pedido" validar conexión y número de factura
+                    console.log('[DEBUG] Confirmar Pedido clicked');
                     if (facturaActual === "Límite alcanzado") {
                       alert("¡Límite de facturas alcanzado!");
                       return;
@@ -1417,35 +1418,50 @@ export default function PuntoDeVentaView({
                       return;
                     }
                     // Evitar llamadas concurrentes
-                    if (checkingFactura) return;
+                    if (checkingFactura) {
+                      console.log('[DEBUG] Ya hay una verificación en curso');
+                      return;
+                    }
                     setCheckingFactura(true);
+                    console.log('[DEBUG] checkingFactura = true');
                     try {
                       // Obtener datos de CAI (rango y caja) para respetar límite si es posible
                       let rango_fin: number | null = null;
                       let cajaAsignada = caiInfo?.caja_asignada;
+                      console.log('[DEBUG] Consultando CAI...');
                       try {
                         const { data: caiData } = await supabase
                           .from("cai_facturas")
                           .select("rango_desde, rango_hasta, caja_asignada")
                           .eq("cajero_id", usuarioActual?.id)
                           .single();
+                        console.log('[DEBUG] CAI data:', caiData);
                         if (caiData) {
                           rango_fin = caiData.rango_hasta ? parseInt(caiData.rango_hasta) : null;
                           cajaAsignada = caiData.caja_asignada || cajaAsignada;
                         }
                       } catch (e) {
                         // si falla, continuar sin rango
+                        console.log('[DEBUG] Error obteniendo CAI:', e);
                       }
 
                       // Empezar desde el número actual
+                      console.log('[DEBUG] Factura actual:', facturaActual);
                       let num = parseInt(facturaActual as string);
                       if (!Number.isFinite(num)) {
+                        console.log('[DEBUG] Recalculando número de factura...');
                         // Si no es numérico, intentar recalcular como en fetchCaiYFactura
-                        const { data: facturasData } = await supabase
+                        const { data: facturasData, error: factError } = await supabase
                           .from("facturas")
                           .select("factura")
                           .eq("cajero", usuarioActual?.nombre)
                           .eq("caja", cajaAsignada || "");
+                        
+                        if (factError) {
+                          console.error('[DEBUG] Error consultando facturas:', factError);
+                          throw new Error(`Error al consultar facturas: ${factError.message}`);
+                        }
+                        
                         let maxFactura = -1;
                         if (facturasData && facturasData.length > 0) {
                           for (const f of facturasData) {
@@ -1459,43 +1475,62 @@ export default function PuntoDeVentaView({
                           // fallback: usar 1
                           num = 1;
                         }
+                        console.log('[DEBUG] Número calculado:', num);
                       }
 
                       // Buscar un número libre incrementando si está ocupado en facturas o pagos
-                      const maxAttempts = 1000; // to avoid infinite loop
+                      console.log('[DEBUG] Buscando número de factura libre...');
+                      const maxAttempts = 100; // reducido de 1000 para evitar loops largos
                       let attempts = 0;
                       while (attempts < maxAttempts) {
                         attempts++;
                         const facturaStr = num.toString();
+                        console.log(`[DEBUG] Intento ${attempts}: verificando factura ${facturaStr}`);
                         // comprobar en facturas
-                        const { data: factData } = await supabase
+                        const { data: factData, error: factError } = await supabase
                           .from("facturas")
                           .select("factura")
                           .eq("factura", facturaStr)
                           .eq("caja", cajaAsignada || "")
                           .limit(1);
+                        
+                        if (factError) {
+                          console.error("[DEBUG] Error consultando facturas:", factError);
+                          throw new Error(`Error al verificar factura en facturas: ${factError.message}`);
+                        }
+
                         // comprobar en pagos
-                        const { data: pagosData } = await supabase
+                        console.log(`[DEBUG] Consultando pagos para factura ${facturaStr}`);
+                        const { data: pagosData, error: pagosError } = await supabase
                           .from("pagos")
                           .select("factura")
                           .eq("factura", facturaStr)
-                          .eq("cajero", usuarioActual?.nombre)
+                          .eq("cajero_id", usuarioActual?.id)
                           .limit(1);
 
+                        if (pagosError) {
+                          console.error("[DEBUG] Error consultando pagos:", pagosError);
+                          throw new Error(`Error al verificar factura en pagos: ${pagosError.message}`);
+                        }
+
+                        console.log(`[DEBUG] Resultados - factData:`, factData, 'pagosData:', pagosData);
                         const existeFactura = Array.isArray(factData) && factData.length > 0;
                         const existePago = Array.isArray(pagosData) && pagosData.length > 0;
 
                         if (!existeFactura && !existePago) {
                           // número libre
+                          console.log(`[DEBUG] Factura ${facturaStr} está libre`);
                           setFacturaActual(facturaStr);
                           setShowClienteModal(true);
                           break;
                         }
 
                         // Si existe, incrementar y reintentar
+                        console.log(`[DEBUG] Factura ${facturaStr} ya existe, incrementando...`);
                         num++;
                         // Si tenemos rango_fin, verificar que no lo excedemos
                         if (rango_fin && num > rango_fin) {
+                          console.log('[DEBUG] Límite de rango alcanzado');
                           setFacturaActual("Límite alcanzado");
                           alert("¡Se ha alcanzado el límite de facturas para este cajero!");
                           break;
@@ -1503,12 +1538,14 @@ export default function PuntoDeVentaView({
                       }
 
                       if (attempts >= maxAttempts) {
+                        console.log('[DEBUG] Máximo de intentos alcanzado');
                         alert("No se pudo asignar un número de factura libre, intenta de nuevo más tarde.");
                       }
                     } catch (err) {
-                      console.error("Error validando factura:", err);
-                      alert("Error al validar número de factura. Intenta de nuevo.");
+                      console.error("[DEBUG] Error validando factura:", err);
+                      alert(`Error al validar número de factura: ${err instanceof Error ? err.message : 'Error desconocido'}`);
                     } finally {
+                      console.log('[DEBUG] Reseteando checkingFactura a false');
                       setCheckingFactura(false);
                     }
                   }}
